@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,6 +83,10 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 
 == Changelog ==
 
+= 1.0.2 =
+* API response and metabox now show whether the LLM was actually invoked (`✦ LLM`) or only deterministic rules ran (`⚙ deterministisch`). Displayed in the "Generiert"-line of the post metabox and updated live after manual generation.
+* API endpoint hardcoded to production server.
+
 = 1.0.1 =
 * Hardcoded API endpoint (overridable via `wp-config.php`); removed configurable endpoint field from settings.
 * Renamed "Server-LLM" auth mode to "Premium: SchemaForge-Server" with clearer descriptions.
@@ -100,6 +104,9 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 * Auto-generation on post save with per-post opt-out.
 
 == Upgrade Notice ==
+
+= 1.0.2 =
+Adds LLM/deterministic mode indicator in the metabox. No breaking changes.
 
 = 1.0.1 =
 Fixes a validation error when generating markup with no SEO plugin active. Update recommended.
