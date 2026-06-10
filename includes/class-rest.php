@@ -55,10 +55,10 @@ class SchemaForge_WP_Rest {
 			return;
 		}
 
-		$auth_mode = get_option( 'schemaforge_wp_auth_mode', 'none' );
+		$auth_type = get_option( 'schemaforge_wp_auth_type', 'none' );
 
-		// Step 2: Auth check depending on mode.
-		if ( $auth_mode === 'server' ) {
+		// Step 2: Auth check depending on auth type.
+		if ( $auth_type === 'server' ) {
 			$cred = $this->api->test_credentials();
 			if ( is_wp_error( $cred ) ) {
 				wp_send_json_error(
@@ -70,11 +70,11 @@ class SchemaForge_WP_Rest {
 				);
 				return;
 			}
-			wp_send_json_success( array_merge( $health, $cred, [ 'auth_mode' => 'server' ] ) );
+			wp_send_json_success( array_merge( $health, $cred, [ 'auth_type' => 'server' ] ) );
 			return;
 		}
 
-		if ( $auth_mode === 'own-key' ) {
+		if ( $auth_type === 'own-key' ) {
 			$key_check = $this->api->validate_key_format();
 			if ( is_wp_error( $key_check ) ) {
 				wp_send_json_error(
@@ -86,11 +86,11 @@ class SchemaForge_WP_Rest {
 				);
 				return;
 			}
-			wp_send_json_success( array_merge( $health, $key_check, [ 'auth_mode' => 'own-key' ] ) );
+			wp_send_json_success( array_merge( $health, $key_check, [ 'auth_type' => 'own-key' ] ) );
 			return;
 		}
 
-		wp_send_json_success( array_merge( $health, [ 'auth_mode' => 'none' ] ) );
+		wp_send_json_success( array_merge( $health, [ 'auth_type' => 'none' ] ) );
 	}
 
 	public function ajax_preview(): void {

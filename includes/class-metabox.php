@@ -53,25 +53,36 @@ class SchemaForge_WP_Metabox {
 	}
 
 	public function render( \WP_Post $post ): void {
-		$meta      = (array) get_post_meta( $post->ID, '_schemaforge_wp_meta', true );
-		$disabled  = (bool) get_post_meta( $post->ID, '_schemaforge_wp_disabled', true );
-		$status    = $meta['status']    ?? '';
-		$used_mode = $meta['usedMode']  ?? '';
-		$score     = isset( $meta['coverageScore'] ) ? round( (float) $meta['coverageScore'] * 100 ) : null;
-		$generated = $meta['generatedAt'] ?? '';
-		$trigger   = $meta['trigger']     ?? '';
-		$issues    = $meta['issues']      ?? [];
-		$plugin    = $this->detector->get_label();
+		$meta         = (array) get_post_meta( $post->ID, '_schemaforge_wp_meta', true );
+		$disabled     = (bool) get_post_meta( $post->ID, '_schemaforge_wp_disabled', true );
+		$status       = $meta['status']    ?? '';
+		$used_mode    = $meta['usedMode']  ?? '';
+		$score        = isset( $meta['coverageScore'] ) ? round( (float) $meta['coverageScore'] * 100 ) : null;
+		$generated    = $meta['generatedAt'] ?? '';
+		$trigger      = $meta['trigger']     ?? '';
+		$issues       = $meta['issues']      ?? [];
+		$plugin       = $this->detector->get_label();
+		$mode_setting = get_option( 'schemaforge_wp_mode', 'deterministic' );
+
+		// Badge shows actually used mode (post-generate) or configured mode (pre-generate).
+		$display_mode = $used_mode ?: ( $mode_setting === 'auto' ? 'llm' : 'deterministic' );
 
 		wp_nonce_field( 'schemaforge_wp_metabox', 'schemaforge_wp_metabox_nonce' );
 		?>
 		<div class="sfwp-metabox">
 
 			<div class="sfwp-metabox-header">
-				<span class="sfwp-detected-plugin">
-					<?php echo esc_html( $plugin ); ?> &middot;
-					<?php echo esc_html( $this->strategy_label() ); ?>
-				</span>
+				<div class="sfwp-metabox-header__left">
+					<span class="sfwp-detected-plugin">
+						<?php echo esc_html( $plugin ); ?> &middot;
+						<?php echo esc_html( $this->strategy_label() ); ?>
+					</span>
+					<span class="sfwp-mode-badge sfwp-mode-badge--<?php echo esc_attr( $display_mode ); ?>">
+						<?php echo $display_mode === 'llm'
+							? esc_html__( '✦ LLM', 'schemaforge-wp' )
+							: esc_html__( '⚙ Deterministisch', 'schemaforge-wp' ); ?>
+					</span>
+				</div>
 				<?php if ( $status ) : ?>
 					<span class="sfwp-status sfwp-status--<?php echo esc_attr( sanitize_html_class( $status ) ); ?>">
 						<?php echo esc_html( $this->status_label( $status ) ); ?>
@@ -92,15 +103,11 @@ class SchemaForge_WP_Metabox {
 			<?php if ( $generated ) : ?>
 				<p class="sfwp-generated-at">
 					<?php
-					$mode_label = $used_mode === 'llm'
-						? __( '✦ LLM', 'schemaforge-wp' )
-						: __( '⚙ deterministisch', 'schemaforge-wp' );
 					printf(
-						/* translators: 1: time, 2: trigger, 3: mode */
-						esc_html__( 'Generiert: %1$s · %2$s · %3$s', 'schemaforge-wp' ),
+						/* translators: 1: time, 2: trigger */
+						esc_html__( 'Generiert: %1$s · %2$s', 'schemaforge-wp' ),
 						esc_html( $generated ),
-						esc_html( $trigger ),
-						esc_html( $mode_label )
+						esc_html( $trigger )
 					);
 					?>
 				</p>
@@ -130,6 +137,12 @@ class SchemaForge_WP_Metabox {
 				</a>
 			</p>
 			<div id="sfwp-preview-panel" style="display:none">
+				<div class="sfwp-preview-toolbar">
+					<span id="sfwp-entity-summary" class="sfwp-entity-summary"></span>
+					<button type="button" id="sfwp-copy-btn" class="sfwp-copy-btn">
+						<?php esc_html_e( 'Kopieren', 'schemaforge-wp' ); ?>
+					</button>
+				</div>
 				<textarea id="sfwp-preview-content" class="sfwp-jsonld-preview" readonly rows="12"></textarea>
 			</div>
 

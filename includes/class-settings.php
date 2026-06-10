@@ -53,7 +53,8 @@ class SchemaForge_WP_Settings {
 
 	public function register_settings(): void {
 		$plain = [
-			'schemaforge_wp_auth_mode',
+			'schemaforge_wp_mode',
+			'schemaforge_wp_auth_type',
 			'schemaforge_wp_username',
 			'schemaforge_wp_own_provider',
 			'schemaforge_wp_strategy',
@@ -84,6 +85,14 @@ class SchemaForge_WP_Settings {
 	}
 
 	// --- Sanitize callbacks ---
+
+	public function sanitize_mode( mixed $v ): string {
+		return in_array( $v, [ 'deterministic', 'auto' ], true ) ? $v : 'deterministic';
+	}
+
+	public function sanitize_auth_type( mixed $v ): string {
+		return in_array( $v, [ 'none', 'server', 'own-key' ], true ) ? $v : 'none';
+	}
 
 	public function sanitize_auth_mode( mixed $v ): string {
 		return in_array( $v, [ 'server', 'own-key', 'none' ], true ) ? $v : 'none';
@@ -124,7 +133,8 @@ class SchemaForge_WP_Settings {
 			return;
 		}
 
-		$auth_mode    = get_option( 'schemaforge_wp_auth_mode', 'none' );
+		$mode         = get_option( 'schemaforge_wp_mode', 'deterministic' );
+		$auth_type    = get_option( 'schemaforge_wp_auth_type', 'none' );
 		$strategy     = get_option( 'schemaforge_wp_strategy', 'auto' );
 		$post_types   = get_option( 'schemaforge_wp_post_types', [ 'post', 'page' ] );
 		$all_types    = get_post_types( [ 'public' => true ], 'objects' );
@@ -186,49 +196,85 @@ class SchemaForge_WP_Settings {
 					</div>
 				</div>
 
-				<!-- Modus & Auth -->
+				<!-- Modus -->
 				<div class="sfwp-card">
-					<h2><?php esc_html_e( 'Modus & Authentifizierung', 'schemaforge-wp' ); ?></h2>
+					<h2><?php esc_html_e( 'Modus', 'schemaforge-wp' ); ?></h2>
 					<div class="sfwp-mode-cards">
 
-						<label class="sfwp-mode-card<?php echo $auth_mode === 'none' ? ' is-checked' : ''; ?>">
-							<input type="radio" name="schemaforge_wp_auth_mode" value="none"
-								<?php checked( $auth_mode, 'none' ); ?> />
+						<label class="sfwp-mode-card<?php echo $mode === 'deterministic' ? ' is-checked' : ''; ?>">
+							<input type="radio" name="schemaforge_wp_mode" value="deterministic"
+								<?php checked( $mode, 'deterministic' ); ?> />
 							<div class="sfwp-mode-card__inner">
 								<span class="sfwp-mode-card__title">
-									<?php esc_html_e( 'Nur deterministisch', 'schemaforge-wp' ); ?>
+									<?php esc_html_e( 'Deterministisch', 'schemaforge-wp' ); ?>
 									<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Standard · kostenlos', 'schemaforge-wp' ); ?></span>
 								</span>
 								<p class="sfwp-mode-card__desc">
-									<?php esc_html_e( 'Erkennt und generiert Schema.org-Markup regelbasiert ohne KI. Kein Account erforderlich.', 'schemaforge-wp' ); ?>
+									<?php esc_html_e( 'Regelbasierte Erkennung aus HTML-Struktur, Meta-Tags und vorhandenem JSON-LD. Schnell, kein API-Key erforderlich.', 'schemaforge-wp' ); ?>
 								</p>
 							</div>
 						</label>
 
-						<label class="sfwp-mode-card<?php echo $auth_mode === 'server' ? ' is-checked' : ''; ?>">
-							<input type="radio" name="schemaforge_wp_auth_mode" value="server"
-								<?php checked( $auth_mode, 'server' ); ?> />
+						<label class="sfwp-mode-card<?php echo $mode === 'auto' ? ' is-checked' : ''; ?>">
+							<input type="radio" name="schemaforge_wp_mode" value="auto"
+								<?php checked( $mode, 'auto' ); ?> />
 							<div class="sfwp-mode-card__inner">
 								<span class="sfwp-mode-card__title">
-									<?php esc_html_e( 'Premium: SchemaForge-Server', 'schemaforge-wp' ); ?>
+									<?php esc_html_e( 'Auto / LLM', 'schemaforge-wp' ); ?>
 									<span class="sfwp-badge sfwp-badge--premium"><?php esc_html_e( 'KI-gestützt', 'schemaforge-wp' ); ?></span>
 								</span>
 								<p class="sfwp-mode-card__desc">
-									<?php esc_html_e( 'Nutzt den konfigurierten LLM-Provider des SchemaForge-Servers. Erfordert einen Account mit Benutzername und Passwort.', 'schemaforge-wp' ); ?>
+									<?php esc_html_e( 'Nutzt KI für tiefere Analyse des Seiteninhalts. Erfordert konfigurierte Authentifizierung (unten). Ohne gültige Auth fällt der Modus automatisch auf Deterministisch zurück.', 'schemaforge-wp' ); ?>
 								</p>
 							</div>
 						</label>
 
-						<label class="sfwp-mode-card<?php echo $auth_mode === 'own-key' ? ' is-checked' : ''; ?>">
-							<input type="radio" name="schemaforge_wp_auth_mode" value="own-key"
-								<?php checked( $auth_mode, 'own-key' ); ?> />
+					</div>
+				</div>
+
+				<!-- Authentifizierung -->
+				<div class="sfwp-card">
+					<h2><?php esc_html_e( 'Authentifizierung', 'schemaforge-wp' ); ?></h2>
+					<div class="sfwp-mode-cards">
+
+						<label class="sfwp-mode-card<?php echo $auth_type === 'none' ? ' is-checked' : ''; ?>">
+							<input type="radio" name="schemaforge_wp_auth_type" value="none"
+								<?php checked( $auth_type, 'none' ); ?> />
 							<div class="sfwp-mode-card__inner">
 								<span class="sfwp-mode-card__title">
-									<?php esc_html_e( 'Eigener LLM-Key', 'schemaforge-wp' ); ?>
+									<?php esc_html_e( 'Kein LLM-Zugang', 'schemaforge-wp' ); ?>
+									<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Standard', 'schemaforge-wp' ); ?></span>
+								</span>
+								<p class="sfwp-mode-card__desc">
+									<?php esc_html_e( 'Kein API-Key hinterlegt. Auto-Modus läuft deterministisch.', 'schemaforge-wp' ); ?>
+								</p>
+							</div>
+						</label>
+
+						<label class="sfwp-mode-card<?php echo $auth_type === 'server' ? ' is-checked' : ''; ?>">
+							<input type="radio" name="schemaforge_wp_auth_type" value="server"
+								<?php checked( $auth_type, 'server' ); ?> />
+							<div class="sfwp-mode-card__inner">
+								<span class="sfwp-mode-card__title">
+									<?php esc_html_e( 'SchemaForge-Server', 'schemaforge-wp' ); ?>
+									<span class="sfwp-badge sfwp-badge--premium"><?php esc_html_e( 'Premium', 'schemaforge-wp' ); ?></span>
+								</span>
+								<p class="sfwp-mode-card__desc">
+									<?php esc_html_e( 'Einloggen mit Benutzername und Passwort. Nutzt den LLM-Provider des Servers.', 'schemaforge-wp' ); ?>
+								</p>
+							</div>
+						</label>
+
+						<label class="sfwp-mode-card<?php echo $auth_type === 'own-key' ? ' is-checked' : ''; ?>">
+							<input type="radio" name="schemaforge_wp_auth_type" value="own-key"
+								<?php checked( $auth_type, 'own-key' ); ?> />
+							<div class="sfwp-mode-card__inner">
+								<span class="sfwp-mode-card__title">
+									<?php esc_html_e( 'Eigener API-Key', 'schemaforge-wp' ); ?>
 									<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Anthropic oder OpenAI', 'schemaforge-wp' ); ?></span>
 								</span>
 								<p class="sfwp-mode-card__desc">
-									<?php esc_html_e( 'Verwende deinen eigenen Anthropic- oder OpenAI-API-Key. Der Key wird nur für deinen WordPress-Aufruf genutzt.', 'schemaforge-wp' ); ?>
+									<?php esc_html_e( 'Eigenen Anthropic- oder OpenAI-Key verwenden. Wird nur für diesen Aufruf genutzt, nicht dauerhaft gespeichert.', 'schemaforge-wp' ); ?>
 								</p>
 							</div>
 						</label>
@@ -237,7 +283,7 @@ class SchemaForge_WP_Settings {
 				</div>
 
 				<!-- Server-Zugangsdaten (conditional) -->
-				<div id="sfwp-auth-server" <?php echo $auth_mode !== 'server' ? 'style="display:none"' : ''; ?>>
+				<div id="sfwp-auth-server" <?php echo $auth_type !== 'server' ? 'style="display:none"' : ''; ?>>
 					<div class="sfwp-card">
 						<h2><?php esc_html_e( 'Server-Zugangsdaten', 'schemaforge-wp' ); ?></h2>
 						<div class="sfwp-field">
@@ -265,7 +311,7 @@ class SchemaForge_WP_Settings {
 				</div>
 
 				<!-- Eigener LLM-Key (conditional) -->
-				<div id="sfwp-auth-own-key" <?php echo $auth_mode !== 'own-key' ? 'style="display:none"' : ''; ?>>
+				<div id="sfwp-auth-own-key" <?php echo $auth_type !== 'own-key' ? 'style="display:none"' : ''; ?>>
 					<div class="sfwp-card">
 						<h2><?php esc_html_e( 'LLM-Key Einstellungen', 'schemaforge-wp' ); ?></h2>
 						<div class="sfwp-field">

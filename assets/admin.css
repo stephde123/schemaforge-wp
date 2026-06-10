@@ -384,9 +384,38 @@
 	border-bottom: 1px solid #e5e7eb;
 }
 
+.sfwp-metabox-header__left {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
 .sfwp-detected-plugin {
 	color: #646970;
 	font-size: 11px;
+}
+
+/* Mode badge in metabox header */
+.sfwp-mode-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 999px;
+	line-height: 1.4;
+}
+
+.sfwp-mode-badge--deterministic {
+	background: rgba(139,147,163,.12);
+	color: #50575e;
+	border: 1px solid #ddd;
+}
+
+.sfwp-mode-badge--llm {
+	background: rgba(192,132,252,.12);
+	color: #7c3aed;
+	border: 1px solid rgba(192,132,252,.3);
 }
 
 .sfwp-status {
@@ -496,13 +525,48 @@
 	width: 100%;
 	font-family: 'SF Mono', 'Fira Mono', 'Inconsolata', monospace;
 	font-size: 11px;
-	background: #0f1115;
-	color: #6ee7b7;
-	border: 1px solid #262b36;
-	border-radius: 6px;
+	background-color: #0f1115 !important;
+	color: #e6e9ef !important;
+	border: 1px solid #262b36 !important;
+	border-radius: 0 0 6px 6px;
 	resize: vertical;
 	padding: 8px;
+	margin-top: 0;
+}
+
+.sfwp-preview-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: #1e2330;
+	border: 1px solid #262b36;
+	border-bottom: none;
+	border-radius: 6px 6px 0 0;
+	padding: 5px 8px;
 	margin-top: 4px;
+}
+
+.sfwp-entity-summary {
+	font-size: 11px;
+	color: #8b93a3;
+}
+
+.sfwp-copy-btn {
+	font-size: 11px !important;
+	padding: 2px 8px !important;
+	height: auto !important;
+	line-height: 1.5 !important;
+	background: #262b36 !important;
+	border: 1px solid #3d4657 !important;
+	color: #e6e9ef !important;
+	border-radius: 4px !important;
+	cursor: pointer;
+	box-shadow: none !important;
+}
+
+.sfwp-copy-btn:hover {
+	border-color: #6ee7b7 !important;
+	color: #6ee7b7 !important;
 }
 
 .sfwp-disable-row {

@@ -31,8 +31,13 @@ jQuery( function ( $ ) {
 					.removeClass( 'sfwp-status--pending sfwp-status--error sfwp-status--done' )
 					.addClass( 'sfwp-status--done' )
 					.text( '✓ Markup vorhanden' );
-				var modeLabel = data.usedMode === 'llm' ? '✦ LLM' : '⚙ deterministisch';
-				$( '.sfwp-generated-at' ).text( 'Generiert: ' + ( data.generatedAt || '' ) + ' · manual · ' + modeLabel );
+				var usedMode  = data.usedMode || 'deterministic';
+				var badgeText = usedMode === 'llm' ? '✦ LLM' : '⚙ Deterministisch';
+				$( '.sfwp-mode-badge' )
+					.removeClass( 'sfwp-mode-badge--llm sfwp-mode-badge--deterministic' )
+					.addClass( 'sfwp-mode-badge--' + usedMode )
+					.text( badgeText );
+				$( '.sfwp-generated-at' ).text( 'Generiert: ' + ( data.generatedAt || '' ) + ' · manual' );
 			} else {
 				$result
 					.addClass( 'sfwp-error' )
@@ -51,6 +56,21 @@ jQuery( function ( $ ) {
 
 	// --- Meta box: JSON-LD Vorschau ---
 
+	function updateEntitySummary( jsonldStr ) {
+		try {
+			var data = JSON.parse( jsonldStr );
+			var graph = data['@graph'] || ( Array.isArray( data ) ? data : [ data ] );
+			var types = graph
+				.map( function ( n ) { return n['@type']; } )
+				.filter( Boolean )
+				.map( function ( t ) { return Array.isArray( t ) ? t[0] : t; } );
+			var unique = types.filter( function ( v, i, a ) { return a.indexOf( v ) === i; } );
+			$( '#sfwp-entity-summary' ).text( types.length + ' ' + ( types.length === 1 ? 'Entity' : 'Entities' ) + ': ' + unique.join( ', ' ) );
+		} catch ( e ) {
+			$( '#sfwp-entity-summary' ).text( '' );
+		}
+	}
+
 	$( '#sfwp-preview-toggle' ).on( 'click', function ( e ) {
 		e.preventDefault();
 		var $panel = $( '#sfwp-preview-panel' );
@@ -67,15 +87,37 @@ jQuery( function ( $ ) {
 		} )
 		.done( function ( resp ) {
 			if ( resp.success ) {
-				$( '#sfwp-preview-content' ).val( resp.data.jsonld || '' );
+				var jsonld = resp.data.jsonld || '';
+				$( '#sfwp-preview-content' ).val( jsonld );
+				updateEntitySummary( jsonld );
 			} else {
 				$( '#sfwp-preview-content' ).val( resp.data || 'Kein Markup vorhanden.' );
+				$( '#sfwp-entity-summary' ).text( '' );
 			}
 			$panel.slideDown();
 		} )
 		.fail( function () {
 			$( '#sfwp-preview-content' ).val( 'Verbindungsfehler' );
+			$( '#sfwp-entity-summary' ).text( '' );
 			$panel.slideDown();
+		} );
+	} );
+
+	// --- Meta box: JSON-LD kopieren ---
+
+	$( '#sfwp-copy-btn' ).on( 'click', function () {
+		var $btn     = $( this );
+		var content  = $( '#sfwp-preview-content' ).val();
+		if ( ! content ) return;
+		navigator.clipboard.writeText( content ).then( function () {
+			$btn.text( '✓ Kopiert' );
+			setTimeout( function () { $btn.text( 'Kopieren' ); }, 1500 );
+		} ).catch( function () {
+			// Fallback for older browsers.
+			$( '#sfwp-preview-content' ).select();
+			document.execCommand( 'copy' );
+			$btn.text( '✓ Kopiert' );
+			setTimeout( function () { $btn.text( 'Kopieren' ); }, 1500 );
 		} );
 	} );
 
@@ -118,21 +160,23 @@ jQuery( function ( $ ) {
 		} );
 	} );
 
-	// --- Settings page: Auth-Modus umschalten ---
+	// --- Settings page: Auth-Typ und Modus umschalten ---
 
 	function updateAuthFields() {
-		var mode = $( 'input[name="schemaforge_wp_auth_mode"]:checked' ).val();
-		$( '#sfwp-auth-server' ).toggle( mode === 'server' );
-		$( '#sfwp-auth-own-key' ).toggle( mode === 'own-key' );
+		var authType = $( 'input[name="schemaforge_wp_auth_type"]:checked' ).val();
+		$( '#sfwp-auth-server' ).toggle( authType === 'server' );
+		$( '#sfwp-auth-own-key' ).toggle( authType === 'own-key' );
 
 		// Sync is-checked class for CSS fallback (browsers without :has support).
-		$( '.sfwp-mode-card' ).each( function () {
-			var cardMode = $( this ).find( 'input[type="radio"]' ).val();
-			$( this ).toggleClass( 'is-checked', cardMode === mode );
+		$( 'input[name="schemaforge_wp_auth_type"]' ).each( function () {
+			$( this ).closest( '.sfwp-mode-card' ).toggleClass( 'is-checked', $( this ).is( ':checked' ) );
+		} );
+		$( 'input[name="schemaforge_wp_mode"]' ).each( function () {
+			$( this ).closest( '.sfwp-mode-card' ).toggleClass( 'is-checked', $( this ).is( ':checked' ) );
 		} );
 	}
 
-	$( 'input[name="schemaforge_wp_auth_mode"]' ).on( 'change', updateAuthFields );
+	$( 'input[name="schemaforge_wp_auth_type"], input[name="schemaforge_wp_mode"]' ).on( 'change', updateAuthFields );
 	updateAuthFields();
 
 	// --- Settings page: Strategie-Beschreibung umschalten ---

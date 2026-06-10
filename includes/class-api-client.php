@@ -33,11 +33,12 @@ class SchemaForge_WP_Api_Client {
 			return new \WP_Error( 'no_endpoint', __( 'Kein API-Endpoint konfiguriert.', 'schemaforge-wp' ) );
 		}
 
-		$auth_mode = get_option( 'schemaforge_wp_auth_mode', 'none' );
-		$payload   = $this->build_payload( $post_id, $auth_mode );
+		$mode      = get_option( 'schemaforge_wp_mode', 'deterministic' );
+		$auth_type = get_option( 'schemaforge_wp_auth_type', 'none' );
+		$payload   = $this->build_payload( $post_id, $mode, $auth_type );
 		$headers   = [ 'Content-Type' => 'application/json' ];
 
-		if ( $auth_mode === 'server' ) {
+		if ( $auth_type === 'server' ) {
 			$token = $this->get_session_token();
 			if ( is_wp_error( $token ) ) {
 				return $token;
@@ -124,13 +125,13 @@ class SchemaForge_WP_Api_Client {
 		return rtrim( SCHEMAFORGE_WP_ENDPOINT, '/' );
 	}
 
-	private function build_payload( int $post_id, string $auth_mode ): array {
+	private function build_payload( int $post_id, string $mode, string $auth_type ): array {
 		$post     = get_post( $post_id );
 		$url      = get_permalink( $post_id );
 		$strategy = get_option( 'schemaforge_wp_strategy', 'auto' );
 
 		// Detect active SEO plugin for context.
-		$active_plugin  = $this->detector->get_active_plugin();
+		$active_plugin   = $this->detector->get_active_plugin();
 		$effective_strat = $strategy === 'auto'
 			? ( $active_plugin ? 'merge' : 'add' )
 			: $strategy;
@@ -144,12 +145,12 @@ class SchemaForge_WP_Api_Client {
 
 		$payload = [
 			'url'     => $url ?: null,
-			'mode'    => ( $auth_mode === 'none' ) ? 'deterministic' : 'auto',
+			'mode'    => $mode,
 			'context' => $context ?: null,
 		];
 
 		// Own LLM key: attach provider + key in the request body.
-		if ( $auth_mode === 'own-key' ) {
+		if ( $auth_type === 'own-key' ) {
 			$payload['provider'] = get_option( 'schemaforge_wp_own_provider', 'anthropic' );
 			$payload['apiKey']   = $this->enc->get_option( 'schemaforge_wp_own_key' );
 		}

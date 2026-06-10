@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,13 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.2.1 =
+* Settings: Modus (Deterministisch / Auto+LLM) and Authentifizierung (Kein LLM / Server / Eigener Key) are now separate independent sections — you can use deterministic mode even when server credentials are saved.
+* Metabox: Mode badge (⚙ Deterministisch / ✦ LLM) prominently displayed in the header; shows configured mode before first generation, then the actually used mode after.
+* Metabox: JSON-LD preview now has a toolbar with entity summary (count + types) and a one-click copy button.
+* Fix: JSON-LD preview textarea was unreadable (light green on dark background) — changed to legible light text (`#e6e9ef`).
+* Fix: `schemaforge_wp_auth_mode` option replaced by `schemaforge_wp_mode` (deterministic|auto) and `schemaforge_wp_auth_type` (none|server|own-key).
 
 = 1.2.0 =
 * UI: Complete settings page redesign — dark-themed card layout matching the SchemaForge web app (dark panels, design tokens, mode radio cards with border-highlight, badge pills, styled inputs).
