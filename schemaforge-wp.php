@@ -20,7 +20,7 @@ define( 'SCHEMAFORGE_WP_CRON_HOOK', 'schemaforge_wp_generate_event' );
 
 // API endpoint — override in wp-config.php: define( 'SCHEMAFORGE_WP_ENDPOINT', 'https://...' );
 if ( ! defined( 'SCHEMAFORGE_WP_ENDPOINT' ) ) {
-	define( 'SCHEMAFORGE_WP_ENDPOINT', 'https://api.schemaforge.io' );
+	define( 'SCHEMAFORGE_WP_ENDPOINT', 'http://64.226.96.241:8420' );
 }
 
 spl_autoload_register( function ( string $class ): void {
