@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -26,47 +26,15 @@ jobs:
       - name: Check PHP syntax
         run: find . -name "*.php" -not -path "./.git/*" -print0 | xargs -0 -I{} php -l {}
 
-  build:
-    name: Build ZIP
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
     needs: lint
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
 
-      - name: Determine version
-        id: version
-        run: |
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-            echo "zip=schemaforge-wp-${GITHUB_REF#refs/tags/}.zip" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=dev" >> "$GITHUB_OUTPUT"
-            echo "zip=schemaforge-wp-dev.zip" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build plugin ZIP
-        run: |
-          # Copy plugin files into a named subfolder so the ZIP unpacks correctly.
-          mkdir -p build/schemaforge-wp
-          rsync -a --exclude=".git" --exclude=".github" --exclude="dist" \
-            --exclude="build" --exclude=".gitignore" \
-            . build/schemaforge-wp/
-          mkdir -p dist
-          cd build
-          zip -r "../dist/${{ steps.version.outputs.zip }}" schemaforge-wp/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.version.outputs.zip }}
-          path: dist/${{ steps.version.outputs.zip }}
-          # GitHub wraps the artifact in a ZIP — naming the artifact after the ZIP
-          # means the download is named correctly when extracted.
-          retention-days: 30
-
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/${{ steps.version.outputs.zip }}
           generate_release_notes: true
