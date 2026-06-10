@@ -25,10 +25,8 @@ jQuery( function ( $ ) {
 					.addClass( 'sfwp-success' )
 					.text( '✓ Generiert · Coverage: ' + score + '%' )
 					.show();
-				// Update score bar if present.
 				$( '.sfwp-score-fill' ).css( 'width', score + '%' );
 				$( '.sfwp-score span:last-child' ).text( score + '%' );
-				// Update status badge.
 				$( '.sfwp-status' )
 					.removeClass( 'sfwp-status--pending sfwp-status--error sfwp-status--done' )
 					.addClass( 'sfwp-status--done' )
@@ -88,7 +86,7 @@ jQuery( function ( $ ) {
 		var $result = $( '#sfwp-test-result' );
 
 		$btn.prop( 'disabled', true );
-		$result.text( '…' ).css( 'color', 'inherit' );
+		$result.text( '…' ).removeClass( 'sfwp-success sfwp-error' );
 
 		$.post( sfwp.ajax_url, {
 			action: 'schemaforge_wp_test_connection',
@@ -104,16 +102,16 @@ jQuery( function ( $ ) {
 				if ( data.auth === 'ok' ) {
 					msg += ' · Premium-Zugangsdaten gültig';
 				} else if ( data.key_format === 'ok' ) {
-					msg += ' · ' + ( data.provider || 'Key' ) + '-Key-Format gültig (wird beim ersten Aufruf vollständig geprüft)';
+					msg += ' · ' + ( data.provider || 'Key' ) + '-Key-Format gültig';
 				}
-				$result.css( 'color', 'green' ).text( msg );
+				$result.addClass( 'sfwp-success' ).text( msg );
 			} else {
 				var errMsg = typeof resp.data === 'string' ? resp.data : 'Verbindung fehlgeschlagen';
-				$result.css( 'color', 'red' ).text( '✗ ' + errMsg );
+				$result.addClass( 'sfwp-error' ).text( '✗ ' + errMsg );
 			}
 		} )
 		.fail( function () {
-			$result.css( 'color', 'red' ).text( '✗ Verbindungsfehler' );
+			$result.addClass( 'sfwp-error' ).text( '✗ Verbindungsfehler' );
 		} )
 		.always( function () {
 			$btn.prop( 'disabled', false );
@@ -126,6 +124,12 @@ jQuery( function ( $ ) {
 		var mode = $( 'input[name="schemaforge_wp_auth_mode"]:checked' ).val();
 		$( '#sfwp-auth-server' ).toggle( mode === 'server' );
 		$( '#sfwp-auth-own-key' ).toggle( mode === 'own-key' );
+
+		// Sync is-checked class for CSS fallback (browsers without :has support).
+		$( '.sfwp-mode-card' ).each( function () {
+			var cardMode = $( this ).find( 'input[type="radio"]' ).val();
+			$( this ).toggleClass( 'is-checked', cardMode === mode );
+		} );
 	}
 
 	$( 'input[name="schemaforge_wp_auth_mode"]' ).on( 'change', updateAuthFields );

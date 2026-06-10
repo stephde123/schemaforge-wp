@@ -66,16 +66,18 @@ class SchemaForge_WP_Metabox {
 		wp_nonce_field( 'schemaforge_wp_metabox', 'schemaforge_wp_metabox_nonce' );
 		?>
 		<div class="sfwp-metabox">
-			<p class="sfwp-detected-plugin">
-				<?php echo esc_html( $plugin ); ?> &middot;
-				<?php echo esc_html( $this->strategy_label() ); ?>
-			</p>
 
-			<?php if ( $status ) : ?>
-				<p class="sfwp-status sfwp-status--<?php echo esc_attr( sanitize_html_class( $status ) ); ?>">
-					<?php echo esc_html( $this->status_label( $status ) ); ?>
-				</p>
-			<?php endif; ?>
+			<div class="sfwp-metabox-header">
+				<span class="sfwp-detected-plugin">
+					<?php echo esc_html( $plugin ); ?> &middot;
+					<?php echo esc_html( $this->strategy_label() ); ?>
+				</span>
+				<?php if ( $status ) : ?>
+					<span class="sfwp-status sfwp-status--<?php echo esc_attr( sanitize_html_class( $status ) ); ?>">
+						<?php echo esc_html( $this->status_label( $status ) ); ?>
+					</span>
+				<?php endif; ?>
+			</div>
 
 			<?php if ( $score !== null ) : ?>
 				<div class="sfwp-score">
@@ -116,28 +118,29 @@ class SchemaForge_WP_Metabox {
 				</ul>
 			<?php endif; ?>
 
-			<button type="button" id="sfwp-generate-btn" class="button button-primary" style="width:100%;margin-top:8px">
+			<button type="button" id="sfwp-generate-btn" class="button button-primary">
 				<?php esc_html_e( 'Markup neu generieren', 'schemaforge-wp' ); ?>
 			</button>
 			<span id="sfwp-generate-spinner" class="spinner" style="float:none;margin-top:8px;display:none"></span>
 			<p id="sfwp-generate-result" style="display:none"></p>
 
-			<p style="margin-top:10px">
-				<a href="#" id="sfwp-preview-toggle">
-					<?php esc_html_e( 'JSON-LD-Vorschau', 'schemaforge-wp' ); ?>
+			<p>
+				<a href="#" id="sfwp-preview-toggle" class="sfwp-preview-toggle">
+					&#9654; <?php esc_html_e( 'JSON-LD-Vorschau', 'schemaforge-wp' ); ?>
 				</a>
 			</p>
 			<div id="sfwp-preview-panel" style="display:none">
 				<textarea id="sfwp-preview-content" class="sfwp-jsonld-preview" readonly rows="12"></textarea>
 			</div>
 
-			<p style="margin-top:10px">
+			<div class="sfwp-disable-row">
 				<label>
 					<input type="checkbox" name="schemaforge_wp_disabled" id="sfwp-disabled"
 						value="1" <?php checked( $disabled ); ?> />
 					<?php esc_html_e( 'Auto-Generierung für diesen Beitrag deaktivieren', 'schemaforge-wp' ); ?>
 				</label>
-			</p>
+			</div>
+
 		</div>
 		<?php
 	}

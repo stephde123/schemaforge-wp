@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,15 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.2.0 =
+* UI: Complete settings page redesign — dark-themed card layout matching the SchemaForge web app (dark panels, design tokens, mode radio cards with border-highlight, badge pills, styled inputs).
+* UI: Mode selection now uses clickable radio cards with visual highlight on selection.
+* UI: Credentials and LLM-key sections appear as separate cards with a clean two-column field layout.
+* UI: Post-type checkboxes are now pill-style toggles.
+* UI: Metabox header groups plugin/strategy info and status badge side-by-side.
+* UI: Generate button uses accent colour; JSON-LD preview uses dark monospace styling.
+* UI: Connection-test result uses branded success/error colours.
 
 = 1.1.0 =
 * Security: JSON-LD is now decoded and re-encoded with XSS-safe flags (JSON_HEX_TAG etc.) before output instead of writing the raw stored string.
