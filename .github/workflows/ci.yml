@@ -46,18 +46,22 @@ jobs:
 
       - name: Build plugin ZIP
         run: |
+          # Copy plugin files into a named subfolder so the ZIP unpacks correctly.
+          mkdir -p build/schemaforge-wp
+          rsync -a --exclude=".git" --exclude=".github" --exclude="dist" \
+            --exclude="build" --exclude=".gitignore" \
+            . build/schemaforge-wp/
           mkdir -p dist
-          zip -r "dist/${{ steps.version.outputs.zip }}" . \
-            --exclude ".git/*" \
-            --exclude ".github/*" \
-            --exclude "dist/*" \
-            --exclude ".gitignore"
+          cd build
+          zip -r "../dist/${{ steps.version.outputs.zip }}" schemaforge-wp/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: schemaforge-wp-zip
+          name: ${{ steps.version.outputs.zip }}
           path: dist/${{ steps.version.outputs.zip }}
+          # GitHub wraps the artifact in a ZIP — naming the artifact after the ZIP
+          # means the download is named correctly when extracted.
           retention-days: 30
 
       - name: Create GitHub Release
