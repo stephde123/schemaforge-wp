@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.3
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,7 +83,7 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 
 == Changelog ==
 
-= 1.0.3 =
+= 1.1.0 =
 * Security: JSON-LD is now decoded and re-encoded with XSS-safe flags (JSON_HEX_TAG etc.) before output instead of writing the raw stored string.
 * Security: Removed `sslverify => false` from loopback requests; SSL verification is now enabled by default (overridable via `schemaforge_wp_sslverify` filter for dev environments).
 * Security: AJAX preview handler now enforces `edit_post` capability check, preventing lower-privileged users from reading post meta.
@@ -119,8 +119,8 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 
 == Upgrade Notice ==
 
-= 1.0.3 =
-Security and stability fixes. Auto-generate-on-save is now opt-in (off by default) — re-enable in Settings if needed.
+= 1.1.0 =
+Security hardening and stability fixes. Auto-generate-on-save is now opt-in (off by default) — re-enable in Settings if needed. Update strongly recommended.
 
 = 1.0.2 =
 Adds LLM/deterministic mode indicator in the metabox. No breaking changes.
