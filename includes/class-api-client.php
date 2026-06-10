@@ -66,10 +66,54 @@ class SchemaForge_WP_Api_Client {
 		return $this->parse_response( $response );
 	}
 
+	/**
+	 * Verify saved server credentials by forcing a fresh login attempt.
+	 * Only meaningful when auth_mode = 'server'.
+	 */
+	public function test_credentials(): array|\WP_Error {
+		delete_transient( self::TOKEN_TRANSIENT );
+		$token = $this->login();
+		if ( is_wp_error( $token ) ) {
+			return $token;
+		}
+		return [ 'auth' => 'ok' ];
+	}
+
+	/**
+	 * Validate the format of the saved own-key without making an LLM call.
+	 */
+	public function validate_key_format(): array|\WP_Error {
+		$provider = get_option( 'schemaforge_wp_own_provider', 'anthropic' );
+		$key      = $this->enc->get_option( 'schemaforge_wp_own_key' );
+
+		if ( ! $key ) {
+			return new \WP_Error( 'no_key', __( 'Kein API-Key hinterlegt.', 'schemaforge-wp' ) );
+		}
+
+		$valid = match ( $provider ) {
+			'anthropic' => str_starts_with( $key, 'sk-ant-' ),
+			'openai'    => str_starts_with( $key, 'sk-' ),
+			default     => true,
+		};
+
+		if ( ! $valid ) {
+			return new \WP_Error(
+				'invalid_key_format',
+				sprintf(
+					/* translators: %s: provider name */
+					__( 'API-Key hat ungültiges Format für Provider „%s".', 'schemaforge-wp' ),
+					$provider
+				)
+			);
+		}
+
+		return [ 'key_format' => 'ok', 'provider' => $provider ];
+	}
+
 	// --- Private helpers ---
 
 	private function get_endpoint(): string {
-		return rtrim( (string) get_option( 'schemaforge_wp_endpoint', '' ), '/' );
+		return rtrim( SCHEMAFORGE_WP_ENDPOINT, '/' );
 	}
 
 	private function build_payload( int $post_id, string $auth_mode ): array {
@@ -84,14 +128,17 @@ class SchemaForge_WP_Api_Client {
 			? ( $active_plugin ? 'merge' : 'add' )
 			: $strategy;
 
+		// Filter null values so Zod's z.string().optional() (which rejects null) doesn't fail.
+		$context = array_filter( [
+			'detectedPlugin' => $active_plugin,
+			'strategy'       => $effective_strat,
+			'lang'           => get_locale() !== '' ? substr( get_locale(), 0, 2 ) : null,
+		], fn( $v ) => $v !== null && $v !== '' );
+
 		$payload = [
-			'url'  => $url ?: null,
-			'mode' => ( $auth_mode === 'none' ) ? 'deterministic' : 'auto',
-			'context' => [
-				'detectedPlugin' => $active_plugin,
-				'strategy'       => $effective_strat,
-				'lang'           => get_locale() !== '' ? substr( get_locale(), 0, 2 ) : null,
-			],
+			'url'     => $url ?: null,
+			'mode'    => ( $auth_mode === 'none' ) ? 'deterministic' : 'auto',
+			'context' => $context ?: null,
 		];
 
 		// Own LLM key: attach provider + key in the request body.

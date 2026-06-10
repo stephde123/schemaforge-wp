@@ -44,15 +44,52 @@ class SchemaForge_WP_Rest {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Keine Berechtigung.', 'schemaforge-wp' ), 403 );
+			return;
 		}
 
-		$result = $this->api->test_connection();
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( $result->get_error_message() );
+		// Step 1: Basic server reachability.
+		$health = $this->api->test_connection();
+		if ( is_wp_error( $health ) ) {
+			wp_send_json_error( $health->get_error_message() );
+			return;
 		}
 
-		wp_send_json_success( $result );
+		$auth_mode = get_option( 'schemaforge_wp_auth_mode', 'none' );
+
+		// Step 2: Auth check depending on mode.
+		if ( $auth_mode === 'server' ) {
+			$cred = $this->api->test_credentials();
+			if ( is_wp_error( $cred ) ) {
+				wp_send_json_error(
+					sprintf(
+						/* translators: %s: error message */
+						__( 'Server erreichbar, aber Zugangsdaten ungültig: %s', 'schemaforge-wp' ),
+						$cred->get_error_message()
+					)
+				);
+				return;
+			}
+			wp_send_json_success( array_merge( $health, $cred, [ 'auth_mode' => 'server' ] ) );
+			return;
+		}
+
+		if ( $auth_mode === 'own-key' ) {
+			$key_check = $this->api->validate_key_format();
+			if ( is_wp_error( $key_check ) ) {
+				wp_send_json_error(
+					sprintf(
+						/* translators: %s: error message */
+						__( 'Server erreichbar, aber Key-Problem: %s', 'schemaforge-wp' ),
+						$key_check->get_error_message()
+					)
+				);
+				return;
+			}
+			wp_send_json_success( array_merge( $health, $key_check, [ 'auth_mode' => 'own-key' ] ) );
+			return;
+		}
+
+		wp_send_json_success( array_merge( $health, [ 'auth_mode' => 'none' ] ) );
 	}
 
 	public function ajax_preview(): void {

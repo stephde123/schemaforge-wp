@@ -18,6 +18,11 @@ define( 'SCHEMAFORGE_WP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SCHEMAFORGE_WP_URL', plugin_dir_url( __FILE__ ) );
 define( 'SCHEMAFORGE_WP_CRON_HOOK', 'schemaforge_wp_generate_event' );
 
+// API endpoint — override in wp-config.php: define( 'SCHEMAFORGE_WP_ENDPOINT', 'https://...' );
+if ( ! defined( 'SCHEMAFORGE_WP_ENDPOINT' ) ) {
+	define( 'SCHEMAFORGE_WP_ENDPOINT', 'https://api.schemaforge.io' );
+}
+
 spl_autoload_register( function ( string $class ): void {
 	if ( ! str_starts_with( $class, 'SchemaForge_WP_' ) ) {
 		return;

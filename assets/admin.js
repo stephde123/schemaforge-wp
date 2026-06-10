@@ -95,11 +95,20 @@ jQuery( function ( $ ) {
 		} )
 		.done( function ( resp ) {
 			if ( resp.success && resp.data && resp.data.ok ) {
-				$result.css( 'color', 'green' )
-					.text( '✓ Verbunden · Provider: ' + ( resp.data.provider || 'unbekannt' ) );
+				var data = resp.data;
+				var msg  = '✓ Server erreichbar';
+				if ( data.provider ) {
+					msg += ' · Provider: ' + data.provider;
+				}
+				if ( data.auth === 'ok' ) {
+					msg += ' · Premium-Zugangsdaten gültig';
+				} else if ( data.key_format === 'ok' ) {
+					msg += ' · ' + ( data.provider || 'Key' ) + '-Key-Format gültig (wird beim ersten Aufruf vollständig geprüft)';
+				}
+				$result.css( 'color', 'green' ).text( msg );
 			} else {
-				$result.css( 'color', 'red' )
-					.text( '✗ ' + ( resp.data || 'Verbindung fehlgeschlagen' ) );
+				var errMsg = typeof resp.data === 'string' ? resp.data : 'Verbindung fehlgeschlagen';
+				$result.css( 'color', 'red' ).text( '✗ ' + errMsg );
 			}
 		} )
 		.fail( function () {
@@ -120,4 +129,14 @@ jQuery( function ( $ ) {
 
 	$( 'input[name="schemaforge_wp_auth_mode"]' ).on( 'change', updateAuthFields );
 	updateAuthFields();
+
+	// --- Settings page: Strategie-Beschreibung umschalten ---
+
+	function updateStrategyDesc() {
+		var val = $( '#sfwp-strategy' ).val();
+		$( '#sfwp-strategy-desc [data-strategy]' ).hide();
+		$( '#sfwp-strategy-desc [data-strategy="' + val + '"]' ).show();
+	}
+
+	$( '#sfwp-strategy' ).on( 'change', updateStrategyDesc );
 } );

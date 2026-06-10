@@ -90,3 +90,52 @@
 .schemaforge-wp-settings .form-table td input[type="password"] {
 	min-width: 320px;
 }
+
+.sfwp-endpoint-info code {
+	font-size: 13px;
+	padding: 2px 6px;
+}
+
+.sfwp-auth-label {
+	display: block;
+	cursor: pointer;
+}
+
+.sfwp-auth-label input[type="radio"] {
+	margin-right: 6px;
+}
+
+.sfwp-mode-tag {
+	display: inline-block;
+	font-size: 11px;
+	font-weight: normal;
+	background: #f0f0f1;
+	color: #50575e;
+	padding: 1px 7px;
+	border-radius: 10px;
+	margin-left: 6px;
+	vertical-align: middle;
+}
+
+.sfwp-mode-tag--premium {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.sfwp-badge {
+	display: inline-block;
+	font-size: 12px;
+	font-weight: 500;
+	padding: 2px 10px;
+	border-radius: 3px;
+}
+
+.sfwp-badge--detected {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.sfwp-badge--none {
+	background: #f0f0f1;
+	color: #50575e;
+}
