@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,6 +83,20 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 
 == Changelog ==
 
+= 1.0.3 =
+* Security: JSON-LD is now decoded and re-encoded with XSS-safe flags (JSON_HEX_TAG etc.) before output instead of writing the raw stored string.
+* Security: Removed `sslverify => false` from loopback requests; SSL verification is now enabled by default (overridable via `schemaforge_wp_sslverify` filter for dev environments).
+* Security: AJAX preview handler now enforces `edit_post` capability check, preventing lower-privileged users from reading post meta.
+* Fix: Cron hook registered with `accepted_args = 2` so the trigger argument is correctly forwarded.
+* Fix: Deactivation hook now uses `wp_unschedule_hook()` to remove all pending events regardless of their arguments.
+* Fix: Prevent duplicate cron events for the same post by checking `wp_next_scheduled()` with args before scheduling; added 30-second delay to absorb rapid multi-saves.
+* Fix: JSON-LD stored with `wp_slash()` to prevent WordPress from stripping backslashes from the JSON string.
+* Fix: Session token transient key is now scoped to endpoint + username, so credential changes automatically invalidate cached tokens.
+* Fix: RankMath merge no longer overwrites nodes of the same type; uses `@id`-based or counter-based unique keys.
+* Fix: Yoast merge now only attaches `mainEntityOfPage`/`publisher` to node types where it is semantically correct (Article, FAQPage, HowTo, Product, Recipe, Event, etc.).
+* UX: Auto-generate-on-save is now opt-in (default: off) with a note that content is transmitted to the API endpoint on generation.
+* Code: `SchemaForge_WP_Detector` injected into `SchemaForge_WP_Api_Client` via constructor instead of re-instantiated on every request.
+
 = 1.0.2 =
 * API response and metabox now show whether the LLM was actually invoked (`✦ LLM`) or only deterministic rules ran (`⚙ deterministisch`). Displayed in the "Generiert"-line of the post metabox and updated live after manual generation.
 * API endpoint hardcoded to production server.
@@ -104,6 +118,9 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 * Auto-generation on post save with per-post opt-out.
 
 == Upgrade Notice ==
+
+= 1.0.3 =
+Security and stability fixes. Auto-generate-on-save is now opt-in (off by default) — re-enable in Settings if needed.
 
 = 1.0.2 =
 Adds LLM/deterministic mode indicator in the metabox. No breaking changes.

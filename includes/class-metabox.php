@@ -55,7 +55,6 @@ class SchemaForge_WP_Metabox {
 	public function render( \WP_Post $post ): void {
 		$meta      = (array) get_post_meta( $post->ID, '_schemaforge_wp_meta', true );
 		$disabled  = (bool) get_post_meta( $post->ID, '_schemaforge_wp_disabled', true );
-		$has_manual = (bool) get_post_meta( $post->ID, '_schemaforge_wp_manual', true );
 		$status    = $meta['status']    ?? '';
 		$used_mode = $meta['usedMode']  ?? '';
 		$score     = isset( $meta['coverageScore'] ) ? round( (float) $meta['coverageScore'] * 100 ) : null;
@@ -73,7 +72,7 @@ class SchemaForge_WP_Metabox {
 			</p>
 
 			<?php if ( $status ) : ?>
-				<p class="sfwp-status sfwp-status--<?php echo esc_attr( $status ); ?>">
+				<p class="sfwp-status sfwp-status--<?php echo esc_attr( sanitize_html_class( $status ) ); ?>">
 					<?php echo esc_html( $this->status_label( $status ) ); ?>
 				</p>
 			<?php endif; ?>

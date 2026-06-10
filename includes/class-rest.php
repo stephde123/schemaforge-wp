@@ -18,7 +18,7 @@ class SchemaForge_WP_Rest {
 	public function ajax_generate(): void {
 		check_ajax_referer( 'schemaforge_wp_generate', 'nonce' );
 
-		$post_id = (int) ( $_POST['post_id'] ?? 0 );
+		$post_id = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
 		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_send_json_error( __( 'Keine Berechtigung.', 'schemaforge-wp' ), 403 );
 		}
@@ -96,7 +96,7 @@ class SchemaForge_WP_Rest {
 	public function ajax_preview(): void {
 		check_ajax_referer( 'schemaforge_wp_generate', 'nonce' );
 
-		$post_id = (int) ( $_POST['post_id'] ?? 0 );
+		$post_id = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
 		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_send_json_error( __( 'Keine Berechtigung.', 'schemaforge-wp' ), 403 );
 		}

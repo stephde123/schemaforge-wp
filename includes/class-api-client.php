@@ -4,15 +4,23 @@ defined( 'ABSPATH' ) || exit;
 class SchemaForge_WP_Api_Client {
 
 	private SchemaForge_WP_Encryption $enc;
-
-	/** WP transient key for the cached session token. */
-	private const TOKEN_TRANSIENT = 'schemaforge_wp_session_token';
+	private SchemaForge_WP_Detector   $detector;
 
 	/** Session token TTL in seconds (23h — server expires at 24h). */
 	private const TOKEN_TTL = 82800;
 
-	public function __construct( SchemaForge_WP_Encryption $enc ) {
-		$this->enc = $enc;
+	public function __construct( SchemaForge_WP_Encryption $enc, SchemaForge_WP_Detector $detector ) {
+		$this->enc      = $enc;
+		$this->detector = $detector;
+	}
+
+	/**
+	 * Transient key scoped to the current endpoint + username so that
+	 * credential changes automatically invalidate cached tokens.
+	 */
+	private function get_token_transient_key(): string {
+		$username = (string) get_option( 'schemaforge_wp_username', '' );
+		return 'sfwp_token_' . md5( SCHEMAFORGE_WP_ENDPOINT . '|' . $username );
 	}
 
 	/**
@@ -71,7 +79,7 @@ class SchemaForge_WP_Api_Client {
 	 * Only meaningful when auth_mode = 'server'.
 	 */
 	public function test_credentials(): array|\WP_Error {
-		delete_transient( self::TOKEN_TRANSIENT );
+		delete_transient( $this->get_token_transient_key() );
 		$token = $this->login();
 		if ( is_wp_error( $token ) ) {
 			return $token;
@@ -122,8 +130,7 @@ class SchemaForge_WP_Api_Client {
 		$strategy = get_option( 'schemaforge_wp_strategy', 'auto' );
 
 		// Detect active SEO plugin for context.
-		$detector       = new SchemaForge_WP_Detector();
-		$active_plugin  = $detector->get_active_plugin();
+		$active_plugin  = $this->detector->get_active_plugin();
 		$effective_strat = $strategy === 'auto'
 			? ( $active_plugin ? 'merge' : 'add' )
 			: $strategy;
@@ -158,9 +165,11 @@ class SchemaForge_WP_Api_Client {
 	}
 
 	private function get_post_html( int $post_id ): ?string {
-		// Make a loopback request to fetch the rendered HTML.
 		$url      = get_permalink( $post_id );
-		$response = wp_remote_get( $url, [ 'timeout' => 15, 'sslverify' => false ] );
+		$response = wp_remote_get( $url, [
+			'timeout'   => 15,
+			'sslverify' => apply_filters( 'schemaforge_wp_sslverify', true ),
+		] );
 		if ( is_wp_error( $response ) ) {
 			return null;
 		}
@@ -169,7 +178,8 @@ class SchemaForge_WP_Api_Client {
 
 	/** Get a valid session token, logging in if needed. */
 	private function get_session_token(): string|\WP_Error {
-		$cached = get_transient( self::TOKEN_TRANSIENT );
+		$key    = $this->get_token_transient_key();
+		$cached = get_transient( $key );
 		if ( $cached ) {
 			return $cached;
 		}
@@ -204,7 +214,7 @@ class SchemaForge_WP_Api_Client {
 			return new \WP_Error( 'login_failed', __( 'Login fehlgeschlagen — kein Token erhalten.', 'schemaforge-wp' ) );
 		}
 
-		set_transient( self::TOKEN_TRANSIENT, $token, self::TOKEN_TTL );
+		set_transient( $this->get_token_transient_key(), $token, self::TOKEN_TTL );
 		return $token;
 	}
 
@@ -219,7 +229,7 @@ class SchemaForge_WP_Api_Client {
 
 		if ( $code === 401 ) {
 			// Session expired — clear cached token so next call will re-login.
-			delete_transient( self::TOKEN_TRANSIENT );
+			delete_transient( $this->get_token_transient_key() );
 			return new \WP_Error( 'unauthorized', __( 'Nicht authentifiziert. Bitte Zugangsdaten prüfen.', 'schemaforge-wp' ) );
 		}
 

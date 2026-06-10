@@ -13,7 +13,8 @@ class SchemaForge_WP_Generator {
 
 	public function register_hooks(): void {
 		add_action( 'save_post', [ $this, 'on_save_post' ], 10, 2 );
-		add_action( SCHEMAFORGE_WP_CRON_HOOK, [ $this, 'run_generation' ] );
+		// accepted_args = 2 so the $trigger argument is forwarded by WP cron.
+		add_action( SCHEMAFORGE_WP_CRON_HOOK, [ $this, 'run_generation' ], 10, 2 );
 	}
 
 	public function on_save_post( int $post_id, \WP_Post $post ): void {
@@ -29,7 +30,7 @@ class SchemaForge_WP_Generator {
 		}
 
 		// Respect global toggle and per-post override.
-		if ( ! get_option( 'schemaforge_wp_auto_on_save', true ) ) {
+		if ( ! get_option( 'schemaforge_wp_auto_on_save', false ) ) {
 			return;
 		}
 		if ( get_post_meta( $post_id, '_schemaforge_wp_disabled', true ) ) {
@@ -40,9 +41,15 @@ class SchemaForge_WP_Generator {
 			return;
 		}
 
-		// Mark as pending and schedule async generation.
+		// Avoid scheduling duplicate events for the same post.
+		$args = [ $post_id, 'save_post' ];
+		if ( wp_next_scheduled( SCHEMAFORGE_WP_CRON_HOOK, $args ) ) {
+			return;
+		}
+
+		// Mark as pending and schedule async generation (30s delay absorbs rapid multi-saves).
 		$this->update_status( $post_id, 'pending' );
-		wp_schedule_single_event( time(), SCHEMAFORGE_WP_CRON_HOOK, [ $post_id, 'save_post' ] );
+		wp_schedule_single_event( time() + 30, SCHEMAFORGE_WP_CRON_HOOK, $args );
 	}
 
 	/**
@@ -65,9 +72,9 @@ class SchemaForge_WP_Generator {
 		}
 
 		// Save the JSON-LD.
-		$jsonld = $result['jsonld'] ?? null;
-		if ( $jsonld ) {
-			update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_json_encode( $jsonld ) );
+		$json = $this->normalize_jsonld( $result['jsonld'] ?? null );
+		if ( $json ) {
+			update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_slash( $json ) );
 		}
 
 		// Save meta (coverage, issues, recommendation, etc.).
@@ -97,9 +104,9 @@ class SchemaForge_WP_Generator {
 			return $result;
 		}
 
-		$jsonld = $result['jsonld'] ?? null;
-		if ( $jsonld ) {
-			update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_json_encode( $jsonld ) );
+		$json = $this->normalize_jsonld( $result['jsonld'] ?? null );
+		if ( $json ) {
+			update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_slash( $json ) );
 		}
 
 		$meta = [
@@ -116,6 +123,26 @@ class SchemaForge_WP_Generator {
 		update_post_meta( $post_id, '_schemaforge_wp_meta', $meta );
 
 		return $meta;
+	}
+
+	/**
+	 * Normalise an API-returned jsonld value (array or already-encoded string)
+	 * to a clean JSON string, or null if it cannot be decoded.
+	 */
+	private function normalize_jsonld( mixed $jsonld ): ?string {
+		if ( is_string( $jsonld ) ) {
+			$decoded = json_decode( $jsonld, true );
+			if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $decoded ) ) {
+				return null;
+			}
+			return wp_json_encode( $decoded );
+		}
+
+		if ( is_array( $jsonld ) ) {
+			return wp_json_encode( $jsonld );
+		}
+
+		return null;
 	}
 
 	private function update_status( int $post_id, string $status, array $extra = [] ): void {

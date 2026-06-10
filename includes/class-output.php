@@ -57,13 +57,26 @@ class SchemaForge_WP_Output {
 		$webpage_id = $this->find_id( $graph, 'WebPage' );
 		$org_id     = $this->find_id( $graph, 'Organization' );
 
+		// Types where attaching mainEntityOfPage/publisher makes semantic sense.
+		$page_context_types = [
+			'Article', 'BlogPosting', 'NewsArticle', 'TechArticle', 'OpinionNewsArticle',
+			'FAQPage', 'HowTo', 'Product', 'Recipe', 'Event',
+		];
+
 		foreach ( $nodes as &$node ) {
-			if ( $webpage_id && ! isset( $node['mainEntityOfPage'] ) ) {
-				$node['mainEntityOfPage'] = [ '@id' => $webpage_id ];
+			$node_type  = $node['@type'] ?? '';
+			$node_types = is_array( $node_type ) ? $node_type : [ $node_type ];
+			$attach_ctx = (bool) array_intersect( $node_types, $page_context_types );
+
+			if ( $attach_ctx ) {
+				if ( $webpage_id && ! isset( $node['mainEntityOfPage'] ) ) {
+					$node['mainEntityOfPage'] = [ '@id' => $webpage_id ];
+				}
+				if ( $org_id && ! isset( $node['publisher'] ) ) {
+					$node['publisher'] = [ '@id' => $org_id ];
+				}
 			}
-			if ( $org_id && ! isset( $node['publisher'] ) ) {
-				$node['publisher'] = [ '@id' => $org_id ];
-			}
+
 			// Skip if this @id is already in Yoast's graph (prevent duplicates).
 			if ( isset( $node['@id'] ) && $this->find_id( $graph, null, $node['@id'] ) ) {
 				continue;
@@ -82,9 +95,20 @@ class SchemaForge_WP_Output {
 			return $data;
 		}
 
+		// Use a counter-based key so multiple nodes of the same type don't overwrite each other.
+		$counts = [];
 		foreach ( $nodes as $node ) {
 			$type = $node['@type'] ?? 'Thing';
-			$key  = 'schemaforge_' . strtolower( is_array( $type ) ? $type[0] : $type );
+			$type = sanitize_key( is_array( $type ) ? reset( $type ) : $type );
+
+			// Prefer @id-based key for stable identity across saves.
+			if ( ! empty( $node['@id'] ) ) {
+				$key = 'schemaforge_' . md5( $node['@id'] );
+			} else {
+				$counts[ $type ] = ( $counts[ $type ] ?? 0 ) + 1;
+				$key = 'schemaforge_' . $type . '_' . $counts[ $type ];
+			}
+
 			$data[ $key ] = $node;
 		}
 
@@ -101,11 +125,18 @@ class SchemaForge_WP_Output {
 		if ( ! $json ) {
 			return;
 		}
-		// Validate JSON before output (NFA-04).
-		if ( json_decode( $json ) === null ) {
+		$decoded = json_decode( $json, true );
+		if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $decoded ) ) {
 			return;
 		}
-		echo '<script type="application/ld+json">' . $json . '</script>' . "\n";
+		// Re-encode with XSS-safe flags rather than outputting the raw stored string.
+		echo '<script type="application/ld+json">' .
+			wp_json_encode(
+				$decoded,
+				JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES |
+				JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+			) .
+			'</script>' . "\n";
 	}
 
 	// --- Helpers ---

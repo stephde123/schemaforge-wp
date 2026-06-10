@@ -314,9 +314,12 @@ class SchemaForge_WP_Settings {
 						<td>
 							<label>
 								<input type="checkbox" name="schemaforge_wp_auto_on_save" value="1"
-									<?php checked( get_option( 'schemaforge_wp_auto_on_save', true ) ); ?> />
+									<?php checked( get_option( 'schemaforge_wp_auto_on_save', false ) ); ?> />
 								<?php esc_html_e( 'Markup automatisch generieren, wenn ein Beitrag gespeichert wird', 'schemaforge-wp' ); ?>
 							</label>
+							<p class="description">
+								<?php esc_html_e( 'Beim Generieren wird die Seiten-URL (und ggf. der Inhalt) an den API-Endpoint übertragen.', 'schemaforge-wp' ); ?>
+							</p>
 						</td>
 					</tr>
 
