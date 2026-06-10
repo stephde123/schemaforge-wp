@@ -1,0 +1,15 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+
+# Composer (not used yet, but for future)
+vendor/
+composer.lock
