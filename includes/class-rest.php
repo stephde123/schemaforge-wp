@@ -32,6 +32,7 @@ class SchemaForge_WP_Rest {
 
 		wp_send_json_success( [
 			'status'        => $result['status']        ?? 'done',
+			'usedMode'      => $result['usedMode']       ?? 'deterministic',
 			'coverageScore' => $result['coverageScore']  ?? 0,
 			'generatedAt'   => $result['generatedAt']    ?? '',
 			'trigger'       => $result['trigger']        ?? 'manual',

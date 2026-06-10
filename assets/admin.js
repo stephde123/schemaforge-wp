@@ -33,7 +33,8 @@ jQuery( function ( $ ) {
 					.removeClass( 'sfwp-status--pending sfwp-status--error sfwp-status--done' )
 					.addClass( 'sfwp-status--done' )
 					.text( '✓ Markup vorhanden' );
-				$( '.sfwp-generated-at' ).text( 'Generiert: ' + ( data.generatedAt || '' ) + ' · manual' );
+				var modeLabel = data.usedMode === 'llm' ? '✦ LLM' : '⚙ deterministisch';
+				$( '.sfwp-generated-at' ).text( 'Generiert: ' + ( data.generatedAt || '' ) + ' · manual · ' + modeLabel );
 			} else {
 				$result
 					.addClass( 'sfwp-error' )

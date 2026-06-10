@@ -56,7 +56,8 @@ class SchemaForge_WP_Metabox {
 		$meta      = (array) get_post_meta( $post->ID, '_schemaforge_wp_meta', true );
 		$disabled  = (bool) get_post_meta( $post->ID, '_schemaforge_wp_disabled', true );
 		$has_manual = (bool) get_post_meta( $post->ID, '_schemaforge_wp_manual', true );
-		$status    = $meta['status'] ?? '';
+		$status    = $meta['status']    ?? '';
+		$used_mode = $meta['usedMode']  ?? '';
 		$score     = isset( $meta['coverageScore'] ) ? round( (float) $meta['coverageScore'] * 100 ) : null;
 		$generated = $meta['generatedAt'] ?? '';
 		$trigger   = $meta['trigger']     ?? '';
@@ -90,11 +91,15 @@ class SchemaForge_WP_Metabox {
 			<?php if ( $generated ) : ?>
 				<p class="sfwp-generated-at">
 					<?php
+					$mode_label = $used_mode === 'llm'
+						? __( '✦ LLM', 'schemaforge-wp' )
+						: __( '⚙ deterministisch', 'schemaforge-wp' );
 					printf(
-						/* translators: 1: time, 2: trigger */
-						esc_html__( 'Generiert: %1$s · %2$s', 'schemaforge-wp' ),
+						/* translators: 1: time, 2: trigger, 3: mode */
+						esc_html__( 'Generiert: %1$s · %2$s · %3$s', 'schemaforge-wp' ),
 						esc_html( $generated ),
-						esc_html( $trigger )
+						esc_html( $trigger ),
+						esc_html( $mode_label )
 					);
 					?>
 				</p>

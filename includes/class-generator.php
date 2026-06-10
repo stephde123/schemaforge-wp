@@ -73,6 +73,7 @@ class SchemaForge_WP_Generator {
 		// Save meta (coverage, issues, recommendation, etc.).
 		$meta = [
 			'recommendation'  => $result['recommendation']  ?? '',
+			'usedMode'        => $result['usedMode']         ?? 'deterministic',
 			'detectedPlugins' => $result['detection']['detectedPlugins'] ?? [],
 			'coverageScore'   => $result['coverageScore']   ?? 0,
 			'issues'          => $result['validation']['issues'] ?? [],
@@ -103,6 +104,7 @@ class SchemaForge_WP_Generator {
 
 		$meta = [
 			'recommendation'  => $result['recommendation']  ?? '',
+			'usedMode'        => $result['usedMode']         ?? 'deterministic',
 			'detectedPlugins' => $result['detection']['detectedPlugins'] ?? [],
 			'coverageScore'   => $result['coverageScore']   ?? 0,
 			'issues'          => $result['validation']['issues'] ?? [],
