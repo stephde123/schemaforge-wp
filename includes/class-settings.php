@@ -138,6 +138,8 @@ class SchemaForge_WP_Settings {
 		$strategy     = get_option( 'schemaforge_wp_strategy', 'auto' );
 		$post_types   = get_option( 'schemaforge_wp_post_types', [ 'post', 'page' ] );
 		$all_types    = get_post_types( [ 'public' => true ], 'objects' );
+		$has_password = $this->enc->get_option( 'schemaforge_wp_password' ) !== '';
+		$has_own_key  = $this->enc->get_option( 'schemaforge_wp_own_key' ) !== '';
 
 		$detector      = new SchemaForge_WP_Detector();
 		$active_plugin = $detector->get_active_plugin();
@@ -146,310 +148,319 @@ class SchemaForge_WP_Settings {
 		<div class="wrap schemaforge-wp-settings">
 			<h1><?php esc_html_e( 'SchemaForge WP — Einstellungen', 'schemaforge-wp' ); ?></h1>
 
-			<div class="sfwp-card sfwp-endpoint-info notice notice-info inline">
-				<p>
-					<strong><?php esc_html_e( 'API-Server:', 'schemaforge-wp' ); ?></strong>
-					<code><?php echo esc_html( SCHEMAFORGE_WP_ENDPOINT ); ?></code>
-					<span class="description" style="margin-left:8px">
-						<?php esc_html_e( '(Fest konfiguriert. Kann per wp-config.php überschrieben werden.)', 'schemaforge-wp' ); ?>
-					</span>
-				</p>
-			</div>
+			<div class="sfwp-layout">
 
-			<form method="post" action="options.php">
-				<?php settings_fields( 'schemaforge_wp_settings' ); ?>
+				<!-- ── Main column ──────────────────────────────────── -->
+				<div class="sfwp-layout__main">
+					<form method="post" action="options.php">
+						<?php settings_fields( 'schemaforge_wp_settings' ); ?>
 
-				<!-- Erkannte Plugins -->
-				<div class="sfwp-card">
-					<h2><?php esc_html_e( 'Erkannte Plugins & Schema-Quellen', 'schemaforge-wp' ); ?></h2>
+						<!-- 1. Authentifizierung -->
+						<div class="sfwp-card">
+							<h2><?php esc_html_e( 'Authentifizierung', 'schemaforge-wp' ); ?></h2>
+							<div class="sfwp-mode-cards">
 
-					<div class="sfwp-field">
-						<div class="sfwp-field-label"><?php esc_html_e( 'Aktives SEO-Plugin', 'schemaforge-wp' ); ?></div>
-						<div class="sfwp-field-body">
-							<?php if ( $active_plugin ) : ?>
-								<span class="sfwp-badge sfwp-badge--detected">&#10003; <?php echo esc_html( $plugin_label ); ?></span>
-								<p class="description">
-									<?php
-									if ( $active_plugin === 'yoast' ) {
-										esc_html_e( 'Yoast SEO erzeugt ein vollständiges JSON-LD-Graph. Im Modus „Auto" oder „Mergen" fügt SchemaForge seine Entitäten direkt in diesen Graph ein.', 'schemaforge-wp' );
-									} elseif ( $active_plugin === 'rankmath' ) {
-										esc_html_e( 'Rank Math erzeugt JSON-LD-Blöcke. Im Modus „Auto" oder „Mergen" werden SchemaForge-Entitäten als neue Blöcke hinzugefügt.', 'schemaforge-wp' );
-									}
-									?>
-								</p>
-							<?php else : ?>
-								<span class="sfwp-badge sfwp-badge--none"><?php esc_html_e( 'Keins erkannt (Yoast SEO, Rank Math)', 'schemaforge-wp' ); ?></span>
-								<p class="description">
-									<?php esc_html_e( 'Kein bekanntes SEO-Plugin aktiv. SchemaForge gibt sein Markup eigenständig als <script type="application/ld+json"> aus.', 'schemaforge-wp' ); ?>
-								</p>
-							<?php endif; ?>
-						</div>
-					</div>
+								<label class="sfwp-mode-card<?php echo $auth_type === 'none' ? ' is-checked' : ''; ?>">
+									<input type="radio" name="schemaforge_wp_auth_type" value="none"
+										<?php checked( $auth_type, 'none' ); ?> />
+									<div class="sfwp-mode-card__inner">
+										<span class="sfwp-mode-card__title">
+											<?php esc_html_e( 'Kein LLM-Zugang', 'schemaforge-wp' ); ?>
+											<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Standard', 'schemaforge-wp' ); ?></span>
+										</span>
+										<p class="sfwp-mode-card__desc">
+											<?php esc_html_e( 'Kein API-Key hinterlegt. Modus läuft immer deterministisch.', 'schemaforge-wp' ); ?>
+										</p>
+									</div>
+								</label>
 
-					<div class="sfwp-field">
-						<div class="sfwp-field-label"><?php esc_html_e( 'Schema von Theme / anderen Plugins', 'schemaforge-wp' ); ?></div>
-						<div class="sfwp-field-body">
-							<p class="description">
-								<?php esc_html_e( 'SchemaForge erkennt beim Generieren auch Schema.org-Markup von Theme oder unbekannten Plugins. Im Modus „Auto" und „Mergen" wird dieses Markup nicht entfernt — SchemaForge ergänzt es. Im Modus „Ersetzen" wird alles außer SchemaForge-Output entfernt.', 'schemaforge-wp' ); ?>
-							</p>
-						</div>
-					</div>
-				</div>
+								<label class="sfwp-mode-card<?php echo $auth_type === 'server' ? ' is-checked' : ''; ?>">
+									<input type="radio" name="schemaforge_wp_auth_type" value="server"
+										<?php checked( $auth_type, 'server' ); ?> />
+									<div class="sfwp-mode-card__inner">
+										<span class="sfwp-mode-card__title">
+											<?php esc_html_e( 'SchemaForge-Server', 'schemaforge-wp' ); ?>
+											<span class="sfwp-badge sfwp-badge--premium"><?php esc_html_e( 'Premium', 'schemaforge-wp' ); ?></span>
+										</span>
+										<p class="sfwp-mode-card__desc">
+											<?php esc_html_e( 'Einloggen mit Benutzername und Passwort. Nutzt den LLM-Provider des Servers.', 'schemaforge-wp' ); ?>
+										</p>
+									</div>
+								</label>
 
-				<!-- Modus -->
-				<div class="sfwp-card">
-					<h2><?php esc_html_e( 'Modus', 'schemaforge-wp' ); ?></h2>
-					<div class="sfwp-mode-cards">
+								<label class="sfwp-mode-card<?php echo $auth_type === 'own-key' ? ' is-checked' : ''; ?>">
+									<input type="radio" name="schemaforge_wp_auth_type" value="own-key"
+										<?php checked( $auth_type, 'own-key' ); ?> />
+									<div class="sfwp-mode-card__inner">
+										<span class="sfwp-mode-card__title">
+											<?php esc_html_e( 'Eigener API-Key', 'schemaforge-wp' ); ?>
+											<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Anthropic oder OpenAI', 'schemaforge-wp' ); ?></span>
+										</span>
+										<p class="sfwp-mode-card__desc">
+											<?php esc_html_e( 'Eigenen Anthropic- oder OpenAI-Key verwenden. Direkte Abrechnung über deinen Account.', 'schemaforge-wp' ); ?>
+										</p>
+									</div>
+								</label>
 
-						<label class="sfwp-mode-card<?php echo $mode === 'deterministic' ? ' is-checked' : ''; ?>">
-							<input type="radio" name="schemaforge_wp_mode" value="deterministic"
-								<?php checked( $mode, 'deterministic' ); ?> />
-							<div class="sfwp-mode-card__inner">
-								<span class="sfwp-mode-card__title">
-									<?php esc_html_e( 'Deterministisch', 'schemaforge-wp' ); ?>
-									<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Standard · kostenlos', 'schemaforge-wp' ); ?></span>
-								</span>
-								<p class="sfwp-mode-card__desc">
-									<?php esc_html_e( 'Regelbasierte Erkennung aus HTML-Struktur, Meta-Tags und vorhandenem JSON-LD. Schnell, kein API-Key erforderlich.', 'schemaforge-wp' ); ?>
-								</p>
-							</div>
-						</label>
-
-						<label class="sfwp-mode-card<?php echo $mode === 'auto' ? ' is-checked' : ''; ?>">
-							<input type="radio" name="schemaforge_wp_mode" value="auto"
-								<?php checked( $mode, 'auto' ); ?> />
-							<div class="sfwp-mode-card__inner">
-								<span class="sfwp-mode-card__title">
-									<?php esc_html_e( 'Auto / LLM', 'schemaforge-wp' ); ?>
-									<span class="sfwp-badge sfwp-badge--premium"><?php esc_html_e( 'KI-gestützt', 'schemaforge-wp' ); ?></span>
-								</span>
-								<p class="sfwp-mode-card__desc">
-									<?php esc_html_e( 'Nutzt KI für tiefere Analyse des Seiteninhalts. Erfordert konfigurierte Authentifizierung (unten). Ohne gültige Auth fällt der Modus automatisch auf Deterministisch zurück.', 'schemaforge-wp' ); ?>
-								</p>
-							</div>
-						</label>
-
-					</div>
-				</div>
-
-				<!-- Authentifizierung -->
-				<div class="sfwp-card">
-					<h2><?php esc_html_e( 'Authentifizierung', 'schemaforge-wp' ); ?></h2>
-					<div class="sfwp-mode-cards">
-
-						<label class="sfwp-mode-card<?php echo $auth_type === 'none' ? ' is-checked' : ''; ?>">
-							<input type="radio" name="schemaforge_wp_auth_type" value="none"
-								<?php checked( $auth_type, 'none' ); ?> />
-							<div class="sfwp-mode-card__inner">
-								<span class="sfwp-mode-card__title">
-									<?php esc_html_e( 'Kein LLM-Zugang', 'schemaforge-wp' ); ?>
-									<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Standard', 'schemaforge-wp' ); ?></span>
-								</span>
-								<p class="sfwp-mode-card__desc">
-									<?php esc_html_e( 'Kein API-Key hinterlegt. Auto-Modus läuft deterministisch.', 'schemaforge-wp' ); ?>
-								</p>
-							</div>
-						</label>
-
-						<label class="sfwp-mode-card<?php echo $auth_type === 'server' ? ' is-checked' : ''; ?>">
-							<input type="radio" name="schemaforge_wp_auth_type" value="server"
-								<?php checked( $auth_type, 'server' ); ?> />
-							<div class="sfwp-mode-card__inner">
-								<span class="sfwp-mode-card__title">
-									<?php esc_html_e( 'SchemaForge-Server', 'schemaforge-wp' ); ?>
-									<span class="sfwp-badge sfwp-badge--premium"><?php esc_html_e( 'Premium', 'schemaforge-wp' ); ?></span>
-								</span>
-								<p class="sfwp-mode-card__desc">
-									<?php esc_html_e( 'Einloggen mit Benutzername und Passwort. Nutzt den LLM-Provider des Servers.', 'schemaforge-wp' ); ?>
-								</p>
-							</div>
-						</label>
-
-						<label class="sfwp-mode-card<?php echo $auth_type === 'own-key' ? ' is-checked' : ''; ?>">
-							<input type="radio" name="schemaforge_wp_auth_type" value="own-key"
-								<?php checked( $auth_type, 'own-key' ); ?> />
-							<div class="sfwp-mode-card__inner">
-								<span class="sfwp-mode-card__title">
-									<?php esc_html_e( 'Eigener API-Key', 'schemaforge-wp' ); ?>
-									<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Anthropic oder OpenAI', 'schemaforge-wp' ); ?></span>
-								</span>
-								<p class="sfwp-mode-card__desc">
-									<?php esc_html_e( 'Eigenen Anthropic- oder OpenAI-Key verwenden. Wird nur für diesen Aufruf genutzt, nicht dauerhaft gespeichert.', 'schemaforge-wp' ); ?>
-								</p>
-							</div>
-						</label>
-
-					</div>
-				</div>
-
-				<!-- Server-Zugangsdaten (conditional) -->
-				<div id="sfwp-auth-server" <?php echo $auth_type !== 'server' ? 'style="display:none"' : ''; ?>>
-					<div class="sfwp-card">
-						<h2><?php esc_html_e( 'Server-Zugangsdaten', 'schemaforge-wp' ); ?></h2>
-						<div class="sfwp-field">
-							<div class="sfwp-field-label">
-								<label for="sfwp-username"><?php esc_html_e( 'Benutzername', 'schemaforge-wp' ); ?></label>
-							</div>
-							<div class="sfwp-field-body">
-								<input type="text" id="sfwp-username" name="schemaforge_wp_username"
-									value="<?php echo esc_attr( get_option( 'schemaforge_wp_username', '' ) ); ?>"
-									autocomplete="username" />
 							</div>
 						</div>
-						<div class="sfwp-field">
-							<div class="sfwp-field-label">
-								<label for="sfwp-password"><?php esc_html_e( 'Passwort', 'schemaforge-wp' ); ?></label>
-							</div>
-							<div class="sfwp-field-body">
-								<input type="password" id="sfwp-password" name="schemaforge_wp_password"
-									value="" autocomplete="new-password"
-									placeholder="<?php echo $this->enc->get_option( 'schemaforge_wp_password' ) !== '' ? '••••••••' : ''; ?>" />
-								<p class="description"><?php esc_html_e( 'Leer lassen, um das gespeicherte Passwort beizubehalten.', 'schemaforge-wp' ); ?></p>
-							</div>
-						</div>
-					</div>
-				</div>
 
-				<!-- Eigener LLM-Key (conditional) -->
-				<div id="sfwp-auth-own-key" <?php echo $auth_type !== 'own-key' ? 'style="display:none"' : ''; ?>>
-					<div class="sfwp-card">
-						<h2><?php esc_html_e( 'LLM-Key Einstellungen', 'schemaforge-wp' ); ?></h2>
-						<div class="sfwp-field">
-							<div class="sfwp-field-label">
-								<label for="sfwp-own-provider"><?php esc_html_e( 'LLM-Provider', 'schemaforge-wp' ); ?></label>
-							</div>
-							<div class="sfwp-field-body">
-								<select id="sfwp-own-provider" name="schemaforge_wp_own_provider">
-									<option value="anthropic" <?php selected( get_option( 'schemaforge_wp_own_provider', 'anthropic' ), 'anthropic' ); ?>>Anthropic (Claude)</option>
-									<option value="openai"    <?php selected( get_option( 'schemaforge_wp_own_provider', 'anthropic' ), 'openai' ); ?>>OpenAI (GPT-4o)</option>
-								</select>
-							</div>
-						</div>
-						<div class="sfwp-field">
-							<div class="sfwp-field-label">
-								<label for="sfwp-own-key"><?php esc_html_e( 'API-Key', 'schemaforge-wp' ); ?></label>
-							</div>
-							<div class="sfwp-field-body">
-								<input type="password" id="sfwp-own-key" name="schemaforge_wp_own_key"
-									value=""
-									placeholder="<?php echo $this->enc->get_option( 'schemaforge_wp_own_key' ) !== '' ? '••••••••' : ''; ?>" />
-								<p class="description"><?php esc_html_e( 'Leer lassen, um den gespeicherten Key beizubehalten.', 'schemaforge-wp' ); ?></p>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Ausgabe-Strategie -->
-				<div class="sfwp-card">
-					<h2><?php esc_html_e( 'Ausgabe-Strategie', 'schemaforge-wp' ); ?></h2>
-
-					<div class="sfwp-field">
-						<div class="sfwp-field-label">
-							<label for="sfwp-strategy"><?php esc_html_e( 'Strategie', 'schemaforge-wp' ); ?></label>
-						</div>
-						<div class="sfwp-field-body">
-							<select id="sfwp-strategy" name="schemaforge_wp_strategy">
-								<option value="auto"    <?php selected( $strategy, 'auto' ); ?>><?php esc_html_e( 'Automatisch', 'schemaforge-wp' ); ?></option>
-								<option value="merge"   <?php selected( $strategy, 'merge' ); ?>><?php esc_html_e( 'Immer mergen', 'schemaforge-wp' ); ?></option>
-								<option value="replace" <?php selected( $strategy, 'replace' ); ?>><?php esc_html_e( 'Ersetzen', 'schemaforge-wp' ); ?></option>
-							</select>
-							<div id="sfwp-strategy-desc" style="margin-top:8px">
-								<div data-strategy="auto" <?php echo $strategy !== 'auto' ? 'style="display:none"' : ''; ?>>
-									<p class="description">
-										<?php
-										if ( $active_plugin ) {
-											printf(
-												/* translators: %s: plugin name */
-												esc_html__( '%s erkannt → SchemaForge ergänzt dessen JSON-LD-Graph, ohne vorhandene Einträge zu entfernen. Bei unbekannten Schema-Quellen (Theme, andere Plugins) wird ebenfalls ergänzt.', 'schemaforge-wp' ),
-												esc_html( $plugin_label )
-											);
-										} else {
-											esc_html_e( 'Kein bekanntes SEO-Plugin erkannt → SchemaForge gibt sein Markup eigenständig aus. Schema von Theme oder unbekannten Plugins bleibt erhalten.', 'schemaforge-wp' );
-										}
-										?>
-									</p>
+						<!-- 1a. Server-Zugangsdaten (conditional) -->
+						<div id="sfwp-auth-server" <?php echo $auth_type !== 'server' ? 'style="display:none"' : ''; ?>>
+							<div class="sfwp-card">
+								<h2><?php esc_html_e( 'Server-Zugangsdaten', 'schemaforge-wp' ); ?></h2>
+								<div class="sfwp-field">
+									<div class="sfwp-field-label">
+										<label for="sfwp-username"><?php esc_html_e( 'Benutzername', 'schemaforge-wp' ); ?></label>
+									</div>
+									<div class="sfwp-field-body">
+										<input type="text" id="sfwp-username" name="schemaforge_wp_username"
+											value="<?php echo esc_attr( get_option( 'schemaforge_wp_username', '' ) ); ?>"
+											autocomplete="username" />
+									</div>
 								</div>
-								<div data-strategy="merge" <?php echo $strategy !== 'merge' ? 'style="display:none"' : ''; ?>>
-									<p class="description">
-										<?php esc_html_e( 'SchemaForge-Entitäten werden immer in vorhandenes Schema eingemischt — egal ob von Yoast, Rank Math, Theme oder einem unbekannten Plugin. Bestehende Einträge werden nicht überschrieben, nur ergänzt.', 'schemaforge-wp' ); ?>
-									</p>
-								</div>
-								<div data-strategy="replace" <?php echo $strategy !== 'replace' ? 'style="display:none"' : ''; ?>>
-									<p class="description">
-										<?php esc_html_e( 'Alle vorhandenen Schema.org-Ausgaben werden deaktiviert. SchemaForge ist die alleinige Quelle für JSON-LD. Nur wählen, wenn du volle Kontrolle über das Markup übernehmen möchtest.', 'schemaforge-wp' ); ?>
-									</p>
+								<div class="sfwp-field">
+									<div class="sfwp-field-label">
+										<label for="sfwp-password"><?php esc_html_e( 'Passwort', 'schemaforge-wp' ); ?></label>
+									</div>
+									<div class="sfwp-field-body">
+										<input type="password" id="sfwp-password" name="schemaforge_wp_password"
+											value="" autocomplete="new-password"
+											placeholder="<?php echo $has_password ? '••••••••' : ''; ?>" />
+										<p class="description"><?php esc_html_e( 'Leer lassen, um das gespeicherte Passwort beizubehalten.', 'schemaforge-wp' ); ?></p>
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
 
-					<div class="sfwp-field">
-						<div class="sfwp-field-label"><?php esc_html_e( 'Automatisch beim Speichern', 'schemaforge-wp' ); ?></div>
-						<div class="sfwp-field-body">
-							<label>
-								<input type="checkbox" name="schemaforge_wp_auto_on_save" value="1"
-									<?php checked( get_option( 'schemaforge_wp_auto_on_save', false ) ); ?> />
-								<?php esc_html_e( 'Markup automatisch generieren, wenn ein Beitrag gespeichert wird', 'schemaforge-wp' ); ?>
-							</label>
-							<p class="description">
-								<?php esc_html_e( 'Beim Generieren wird die Seiten-URL (und ggf. der Inhalt) an den API-Endpoint übertragen.', 'schemaforge-wp' ); ?>
-							</p>
+						<!-- 1b. Eigener LLM-Key (conditional) -->
+						<div id="sfwp-auth-own-key" <?php echo $auth_type !== 'own-key' ? 'style="display:none"' : ''; ?>>
+							<div class="sfwp-card">
+								<h2><?php esc_html_e( 'LLM-Key Einstellungen', 'schemaforge-wp' ); ?></h2>
+								<div class="sfwp-field">
+									<div class="sfwp-field-label">
+										<label for="sfwp-own-provider"><?php esc_html_e( 'Provider', 'schemaforge-wp' ); ?></label>
+									</div>
+									<div class="sfwp-field-body">
+										<select id="sfwp-own-provider" name="schemaforge_wp_own_provider">
+											<option value="anthropic" <?php selected( get_option( 'schemaforge_wp_own_provider', 'anthropic' ), 'anthropic' ); ?>>Anthropic (Claude)</option>
+											<option value="openai"    <?php selected( get_option( 'schemaforge_wp_own_provider', 'anthropic' ), 'openai' ); ?>>OpenAI (GPT-4o)</option>
+										</select>
+									</div>
+								</div>
+								<div class="sfwp-field">
+									<div class="sfwp-field-label">
+										<label for="sfwp-own-key"><?php esc_html_e( 'API-Key', 'schemaforge-wp' ); ?></label>
+									</div>
+									<div class="sfwp-field-body">
+										<input type="password" id="sfwp-own-key" name="schemaforge_wp_own_key"
+											value=""
+											placeholder="<?php echo $has_own_key ? '••••••••' : ''; ?>" />
+										<p class="description"><?php esc_html_e( 'Leer lassen, um den gespeicherten Key beizubehalten.', 'schemaforge-wp' ); ?></p>
+									</div>
+								</div>
+							</div>
 						</div>
-					</div>
 
-					<div class="sfwp-field">
-						<div class="sfwp-field-label"><?php esc_html_e( 'Post-Types', 'schemaforge-wp' ); ?></div>
-						<div class="sfwp-field-body">
-							<div class="sfwp-post-types">
-								<?php foreach ( $all_types as $type ) : ?>
+						<!-- 2. Modus (auto locked when no auth) -->
+						<div class="sfwp-card">
+							<h2><?php esc_html_e( 'Modus', 'schemaforge-wp' ); ?></h2>
+							<div class="sfwp-mode-cards">
+
+								<label class="sfwp-mode-card<?php echo $mode === 'deterministic' ? ' is-checked' : ''; ?>">
+									<input type="radio" name="schemaforge_wp_mode" value="deterministic"
+										<?php checked( $mode, 'deterministic' ); ?> />
+									<div class="sfwp-mode-card__inner">
+										<span class="sfwp-mode-card__title">
+											<?php esc_html_e( 'Deterministisch', 'schemaforge-wp' ); ?>
+											<span class="sfwp-badge sfwp-badge--neutral"><?php esc_html_e( 'Standard · kostenlos', 'schemaforge-wp' ); ?></span>
+										</span>
+										<p class="sfwp-mode-card__desc">
+											<?php esc_html_e( 'Regelbasierte Erkennung aus HTML-Struktur, Meta-Tags und vorhandenem JSON-LD. Schnell, kein API-Key erforderlich.', 'schemaforge-wp' ); ?>
+										</p>
+									</div>
+								</label>
+
+								<label id="sfwp-mode-auto-card" class="sfwp-mode-card<?php echo $mode === 'auto' ? ' is-checked' : ''; ?><?php echo $auth_type === 'none' ? ' is-locked' : ''; ?>">
+									<input type="radio" name="schemaforge_wp_mode" value="auto"
+										<?php checked( $mode, 'auto' ); ?> />
+									<div class="sfwp-mode-card__inner">
+										<span class="sfwp-mode-card__title">
+											<?php esc_html_e( 'Auto / LLM', 'schemaforge-wp' ); ?>
+											<span class="sfwp-badge sfwp-badge--premium"><?php esc_html_e( 'KI-gestützt', 'schemaforge-wp' ); ?></span>
+										</span>
+										<p class="sfwp-mode-card__desc">
+											<?php esc_html_e( 'Nutzt KI für tiefere Analyse des Seiteninhalts. Erfordert konfigurierte Authentifizierung.', 'schemaforge-wp' ); ?>
+										</p>
+										<p class="sfwp-mode-card__lock-note">
+											<?php esc_html_e( 'Authentifizierung erforderlich — wähle Server oder Eigener Key.', 'schemaforge-wp' ); ?>
+										</p>
+									</div>
+								</label>
+
+							</div>
+						</div>
+
+						<!-- 3. Ausgabe & Generierung -->
+						<div class="sfwp-card">
+							<h2><?php esc_html_e( 'Ausgabe & Generierung', 'schemaforge-wp' ); ?></h2>
+
+							<div class="sfwp-field">
+								<div class="sfwp-field-label">
+									<label for="sfwp-strategy"><?php esc_html_e( 'Ausgabe-Strategie', 'schemaforge-wp' ); ?></label>
+								</div>
+								<div class="sfwp-field-body">
+									<select id="sfwp-strategy" name="schemaforge_wp_strategy">
+										<option value="auto"    <?php selected( $strategy, 'auto' ); ?>><?php esc_html_e( 'Automatisch', 'schemaforge-wp' ); ?></option>
+										<option value="merge"   <?php selected( $strategy, 'merge' ); ?>><?php esc_html_e( 'Immer mergen', 'schemaforge-wp' ); ?></option>
+										<option value="replace" <?php selected( $strategy, 'replace' ); ?>><?php esc_html_e( 'Ersetzen', 'schemaforge-wp' ); ?></option>
+									</select>
+									<div id="sfwp-strategy-desc" style="margin-top:8px">
+										<div data-strategy="auto" <?php echo $strategy !== 'auto' ? 'style="display:none"' : ''; ?>>
+											<p class="description">
+												<?php
+												if ( $active_plugin ) {
+													printf(
+														/* translators: %s: plugin name */
+														esc_html__( '%s erkannt → SchemaForge ergänzt dessen JSON-LD-Graph.', 'schemaforge-wp' ),
+														esc_html( $plugin_label )
+													);
+												} else {
+													esc_html_e( 'Kein SEO-Plugin → SchemaForge gibt Markup eigenständig aus.', 'schemaforge-wp' );
+												}
+												?>
+											</p>
+										</div>
+										<div data-strategy="merge" <?php echo $strategy !== 'merge' ? 'style="display:none"' : ''; ?>>
+											<p class="description"><?php esc_html_e( 'Entitäten werden immer in vorhandenes Schema eingemischt — egal welche Quelle.', 'schemaforge-wp' ); ?></p>
+										</div>
+										<div data-strategy="replace" <?php echo $strategy !== 'replace' ? 'style="display:none"' : ''; ?>>
+											<p class="description"><?php esc_html_e( 'Alle anderen Schema-Ausgaben werden deaktiviert. SchemaForge ist die alleinige JSON-LD-Quelle.', 'schemaforge-wp' ); ?></p>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="sfwp-field">
+								<div class="sfwp-field-label"><?php esc_html_e( 'Auto beim Speichern', 'schemaforge-wp' ); ?></div>
+								<div class="sfwp-field-body">
 									<label>
-										<input type="checkbox" name="schemaforge_wp_post_types[]"
-											value="<?php echo esc_attr( $type->name ); ?>"
-											<?php checked( in_array( $type->name, (array) $post_types, true ) ); ?> />
-										<?php echo esc_html( $type->labels->name . ' (' . $type->name . ')' ); ?>
+										<input type="checkbox" name="schemaforge_wp_auto_on_save" value="1"
+											<?php checked( get_option( 'schemaforge_wp_auto_on_save', false ) ); ?> />
+										<?php esc_html_e( 'Markup automatisch generieren, wenn ein Beitrag gespeichert wird', 'schemaforge-wp' ); ?>
 									</label>
-								<?php endforeach; ?>
+									<p class="description"><?php esc_html_e( 'Beim Generieren wird die Seiten-URL an den API-Endpoint übertragen.', 'schemaforge-wp' ); ?></p>
+								</div>
+							</div>
+
+							<div class="sfwp-field">
+								<div class="sfwp-field-label"><?php esc_html_e( 'Post-Types', 'schemaforge-wp' ); ?></div>
+								<div class="sfwp-field-body">
+									<div class="sfwp-post-types">
+										<?php foreach ( $all_types as $type ) : ?>
+											<label>
+												<input type="checkbox" name="schemaforge_wp_post_types[]"
+													value="<?php echo esc_attr( $type->name ); ?>"
+													<?php checked( in_array( $type->name, (array) $post_types, true ) ); ?> />
+												<?php echo esc_html( $type->labels->name . ' (' . $type->name . ')' ); ?>
+											</label>
+										<?php endforeach; ?>
+									</div>
+								</div>
+							</div>
+
+							<div class="sfwp-field">
+								<div class="sfwp-field-label">
+									<label for="sfwp-timeout"><?php esc_html_e( 'Timeout (Sek.)', 'schemaforge-wp' ); ?></label>
+								</div>
+								<div class="sfwp-field-body">
+									<input type="number" id="sfwp-timeout" name="schemaforge_wp_timeout"
+										value="<?php echo esc_attr( get_option( 'schemaforge_wp_timeout', 20 ) ); ?>"
+										min="5" max="120" />
+								</div>
+							</div>
+						</div>
+
+						<div class="sfwp-submit-row"><?php submit_button(); ?></div>
+					</form>
+				</div><!-- /.sfwp-layout__main -->
+
+				<!-- ── Aside column ─────────────────────────────────── -->
+				<div class="sfwp-layout__aside">
+
+					<!-- Verbindung testen -->
+					<div class="sfwp-card sfwp-aside-card">
+						<h2><?php esc_html_e( 'Verbindung testen', 'schemaforge-wp' ); ?></h2>
+						<p class="description sfwp-aside-desc">
+							<?php esc_html_e( 'Verwendet aktuelle Formularwerte — ohne vorheriges Speichern.', 'schemaforge-wp' ); ?>
+						</p>
+						<button type="button" id="sfwp-test-connection" class="button button-secondary sfwp-test-btn">
+							<?php esc_html_e( 'Jetzt testen', 'schemaforge-wp' ); ?>
+							<span id="sfwp-test-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 0 0 4px;display:none"></span>
+						</button>
+						<div id="sfwp-test-results" style="display:none; margin-top:12px;">
+							<div class="sfwp-tri" id="sfwp-tri-server">
+								<span class="sfwp-tri__icon"></span>
+								<div class="sfwp-tri__body">
+									<strong><?php esc_html_e( 'Server', 'schemaforge-wp' ); ?></strong>
+									<div class="sfwp-tri__detail"></div>
+								</div>
+							</div>
+							<div class="sfwp-tri" id="sfwp-tri-auth">
+								<span class="sfwp-tri__icon"></span>
+								<div class="sfwp-tri__body">
+									<strong><?php esc_html_e( 'Zugangsdaten', 'schemaforge-wp' ); ?></strong>
+									<div class="sfwp-tri__detail"></div>
+								</div>
+							</div>
+							<div class="sfwp-tri" id="sfwp-tri-llm">
+								<span class="sfwp-tri__icon"></span>
+								<div class="sfwp-tri__body">
+									<strong><?php esc_html_e( 'LLM-Key', 'schemaforge-wp' ); ?></strong>
+									<div class="sfwp-tri__detail"></div>
+								</div>
 							</div>
 						</div>
 					</div>
 
-					<div class="sfwp-field">
-						<div class="sfwp-field-label">
-							<label for="sfwp-timeout"><?php esc_html_e( 'Timeout (Sekunden)', 'schemaforge-wp' ); ?></label>
-						</div>
-						<div class="sfwp-field-body">
-							<input type="number" id="sfwp-timeout" name="schemaforge_wp_timeout"
-								value="<?php echo esc_attr( get_option( 'schemaforge_wp_timeout', 20 ) ); ?>"
-								min="5" max="120" />
-						</div>
+					<!-- API-Server -->
+					<div class="sfwp-card sfwp-aside-card">
+						<h2><?php esc_html_e( 'API-Server', 'schemaforge-wp' ); ?></h2>
+						<code class="sfwp-aside-code"><?php echo esc_html( SCHEMAFORGE_WP_ENDPOINT ); ?></code>
+						<p class="description sfwp-aside-desc">
+							<?php esc_html_e( 'Fest konfiguriert. Überschreiben per wp-config.php:', 'schemaforge-wp' ); ?>
+						</p>
+						<code class="sfwp-aside-code sfwp-aside-code--small">define( 'SCHEMAFORGE_WP_ENDPOINT', '…' );</code>
 					</div>
-				</div>
 
-				<div class="sfwp-submit-row"><?php submit_button(); ?></div>
-			</form>
+					<!-- Erkannte Plugins -->
+					<div class="sfwp-card sfwp-aside-card">
+						<h2><?php esc_html_e( 'Erkannte Plugins', 'schemaforge-wp' ); ?></h2>
+						<?php if ( $active_plugin ) : ?>
+							<span class="sfwp-badge sfwp-badge--detected">&#10003; <?php echo esc_html( $plugin_label ); ?></span>
+							<p class="description sfwp-aside-desc">
+								<?php
+								if ( $active_plugin === 'yoast' ) {
+									esc_html_e( 'Yoast SEO erkannt. Im Auto/Merge-Modus fügt SchemaForge Entitäten direkt in den Yoast-Graph ein.', 'schemaforge-wp' );
+								} elseif ( $active_plugin === 'rankmath' ) {
+									esc_html_e( 'Rank Math erkannt. SchemaForge ergänzt die vorhandenen JSON-LD-Blöcke.', 'schemaforge-wp' );
+								}
+								?>
+							</p>
+						<?php else : ?>
+							<span class="sfwp-badge sfwp-badge--none"><?php esc_html_e( 'Keins erkannt', 'schemaforge-wp' ); ?></span>
+							<p class="description sfwp-aside-desc">
+								<?php esc_html_e( 'Kein SEO-Plugin aktiv. SchemaForge gibt Markup eigenständig aus.', 'schemaforge-wp' ); ?>
+							</p>
+						<?php endif; ?>
+						<p class="description sfwp-aside-desc" style="margin-top:6px">
+							<?php esc_html_e( 'Schema von Theme/anderen Plugins bleibt im Auto- und Merge-Modus erhalten.', 'schemaforge-wp' ); ?>
+						</p>
+					</div>
 
-			<!-- Connection test (outside form, AJAX) -->
-			<div class="sfwp-card sfwp-connection-test">
-				<h2><?php esc_html_e( 'Verbindung testen', 'schemaforge-wp' ); ?></h2>
-				<p class="description">
-					<?php
-					if ( $auth_mode === 'server' ) {
-						esc_html_e( 'Prüft die Erreichbarkeit des Servers und ob die Premium-Zugangsdaten gültig sind.', 'schemaforge-wp' );
-					} elseif ( $auth_mode === 'own-key' ) {
-						esc_html_e( 'Prüft die Erreichbarkeit des Servers und das Format des eingetragenen API-Keys.', 'schemaforge-wp' );
-					} else {
-						esc_html_e( 'Prüft die Erreichbarkeit des SchemaForge-Servers.', 'schemaforge-wp' );
-					}
-					?>
-				</p>
-				<div class="sfwp-test-row">
-					<button type="button" id="sfwp-test-connection" class="button button-secondary">
-						<?php esc_html_e( 'Verbindung testen', 'schemaforge-wp' ); ?>
-					</button>
-					<span id="sfwp-test-result"></span>
-				</div>
-			</div>
-		</div>
+				</div><!-- /.sfwp-layout__aside -->
+			</div><!-- /.sfwp-layout -->
+		</div><!-- /.wrap -->
 		<?php
 	}
 }

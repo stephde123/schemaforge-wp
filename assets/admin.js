@@ -1,7 +1,7 @@
 /* global sfwp, jQuery */
 jQuery( function ( $ ) {
 
-	// --- Meta box: Markup generieren ---
+	// ── Metabox: Markup generieren ────────────────────────────────────────
 
 	$( '#sfwp-generate-btn' ).on( 'click', function () {
 		var $btn     = $( this );
@@ -19,12 +19,9 @@ jQuery( function ( $ ) {
 		} )
 		.done( function ( resp ) {
 			if ( resp.success ) {
-				var data  = resp.data;
-				var score = Math.round( ( data.coverageScore || 0 ) * 100 );
-				$result
-					.addClass( 'sfwp-success' )
-					.text( '✓ Generiert · Coverage: ' + score + '%' )
-					.show();
+				var data     = resp.data;
+				var score    = Math.round( ( data.coverageScore || 0 ) * 100 );
+				$result.addClass( 'sfwp-success' ).text( '✓ Generiert · Coverage: ' + score + '%' ).show();
 				$( '.sfwp-score-fill' ).css( 'width', score + '%' );
 				$( '.sfwp-score span:last-child' ).text( score + '%' );
 				$( '.sfwp-status' )
@@ -39,10 +36,7 @@ jQuery( function ( $ ) {
 					.text( badgeText );
 				$( '.sfwp-generated-at' ).text( 'Generiert: ' + ( data.generatedAt || '' ) + ' · manual' );
 			} else {
-				$result
-					.addClass( 'sfwp-error' )
-					.text( '✗ ' + ( resp.data || 'Fehler' ) )
-					.show();
+				$result.addClass( 'sfwp-error' ).text( '✗ ' + ( resp.data || 'Fehler' ) ).show();
 			}
 		} )
 		.fail( function () {
@@ -54,18 +48,20 @@ jQuery( function ( $ ) {
 		} );
 	} );
 
-	// --- Meta box: JSON-LD Vorschau ---
+	// ── Metabox: JSON-LD Vorschau ─────────────────────────────────────────
 
 	function updateEntitySummary( jsonldStr ) {
 		try {
-			var data = JSON.parse( jsonldStr );
+			var data  = JSON.parse( jsonldStr );
 			var graph = data['@graph'] || ( Array.isArray( data ) ? data : [ data ] );
 			var types = graph
 				.map( function ( n ) { return n['@type']; } )
 				.filter( Boolean )
 				.map( function ( t ) { return Array.isArray( t ) ? t[0] : t; } );
 			var unique = types.filter( function ( v, i, a ) { return a.indexOf( v ) === i; } );
-			$( '#sfwp-entity-summary' ).text( types.length + ' ' + ( types.length === 1 ? 'Entity' : 'Entities' ) + ': ' + unique.join( ', ' ) );
+			$( '#sfwp-entity-summary' ).text(
+				types.length + ' ' + ( types.length === 1 ? 'Entity' : 'Entities' ) + ': ' + unique.join( ', ' )
+			);
 		} catch ( e ) {
 			$( '#sfwp-entity-summary' ).text( '' );
 		}
@@ -103,17 +99,16 @@ jQuery( function ( $ ) {
 		} );
 	} );
 
-	// --- Meta box: JSON-LD kopieren ---
+	// ── Metabox: JSON-LD kopieren ─────────────────────────────────────────
 
 	$( '#sfwp-copy-btn' ).on( 'click', function () {
-		var $btn     = $( this );
-		var content  = $( '#sfwp-preview-content' ).val();
+		var $btn    = $( this );
+		var content = $( '#sfwp-preview-content' ).val();
 		if ( ! content ) return;
 		navigator.clipboard.writeText( content ).then( function () {
 			$btn.text( '✓ Kopiert' );
 			setTimeout( function () { $btn.text( 'Kopieren' ); }, 1500 );
 		} ).catch( function () {
-			// Fallback for older browsers.
 			$( '#sfwp-preview-content' ).select();
 			document.execCommand( 'copy' );
 			$btn.text( '✓ Kopiert' );
@@ -121,65 +116,121 @@ jQuery( function ( $ ) {
 		} );
 	} );
 
-	// --- Settings page: Verbindung testen ---
+	// ── Settings: Modus-Verfügbarkeit basierend auf Auth ──────────────────
 
-	$( '#sfwp-test-connection' ).on( 'click', function () {
-		var $btn    = $( this );
-		var $result = $( '#sfwp-test-result' );
+	function updateModeAvailability() {
+		var authType  = $( 'input[name="schemaforge_wp_auth_type"]:checked' ).val();
+		var hasAuth   = authType === 'server' || authType === 'own-key';
+		var $autoCard = $( '#sfwp-mode-auto-card' );
 
-		$btn.prop( 'disabled', true );
-		$result.text( '…' ).removeClass( 'sfwp-success sfwp-error' );
+		if ( ! $autoCard.length ) return;
 
-		$.post( sfwp.ajax_url, {
-			action: 'schemaforge_wp_test_connection',
-			nonce:  sfwp.nonce,
-		} )
-		.done( function ( resp ) {
-			if ( resp.success && resp.data && resp.data.ok ) {
-				var data = resp.data;
-				var msg  = '✓ Server erreichbar';
-				if ( data.provider ) {
-					msg += ' · Provider: ' + data.provider;
-				}
-				if ( data.auth === 'ok' ) {
-					msg += ' · Premium-Zugangsdaten gültig';
-				} else if ( data.key_format === 'ok' ) {
-					msg += ' · ' + ( data.provider || 'Key' ) + '-Key-Format gültig';
-				}
-				$result.addClass( 'sfwp-success' ).text( msg );
-			} else {
-				var errMsg = typeof resp.data === 'string' ? resp.data : 'Verbindung fehlgeschlagen';
-				$result.addClass( 'sfwp-error' ).text( '✗ ' + errMsg );
-			}
-		} )
-		.fail( function () {
-			$result.addClass( 'sfwp-error' ).text( '✗ Verbindungsfehler' );
-		} )
-		.always( function () {
-			$btn.prop( 'disabled', false );
+		$autoCard.toggleClass( 'is-locked', ! hasAuth );
+
+		// If auto is selected but auth is now removed, force deterministic.
+		if ( ! hasAuth && $( 'input[name="schemaforge_wp_mode"]:checked' ).val() === 'auto' ) {
+			$( 'input[name="schemaforge_wp_mode"][value="deterministic"]' ).prop( 'checked', true );
+			syncModeCards();
+		}
+	}
+
+	function syncModeCards() {
+		$( 'input[name="schemaforge_wp_mode"]' ).each( function () {
+			$( this ).closest( '.sfwp-mode-card' ).toggleClass( 'is-checked', $( this ).is( ':checked' ) );
 		} );
-	} );
-
-	// --- Settings page: Auth-Typ und Modus umschalten ---
+	}
 
 	function updateAuthFields() {
 		var authType = $( 'input[name="schemaforge_wp_auth_type"]:checked' ).val();
 		$( '#sfwp-auth-server' ).toggle( authType === 'server' );
 		$( '#sfwp-auth-own-key' ).toggle( authType === 'own-key' );
 
-		// Sync is-checked class for CSS fallback (browsers without :has support).
+		// Sync is-checked for CSS :has() fallback.
 		$( 'input[name="schemaforge_wp_auth_type"]' ).each( function () {
 			$( this ).closest( '.sfwp-mode-card' ).toggleClass( 'is-checked', $( this ).is( ':checked' ) );
 		} );
-		$( 'input[name="schemaforge_wp_mode"]' ).each( function () {
-			$( this ).closest( '.sfwp-mode-card' ).toggleClass( 'is-checked', $( this ).is( ':checked' ) );
-		} );
+		syncModeCards();
+		updateModeAvailability();
 	}
 
 	$( 'input[name="schemaforge_wp_auth_type"], input[name="schemaforge_wp_mode"]' ).on( 'change', updateAuthFields );
 	updateAuthFields();
 
-	// --- Settings page: Strategie-Beschreibung umschalten ---
+	// ── Settings: Verbindung testen mit Live-Formularwerten ───────────────
+
+	function getLiveFormData() {
+		return {
+			live_auth_type:    $( 'input[name="schemaforge_wp_auth_type"]:checked' ).val() || 'none',
+			live_username:     $( 'input[name="schemaforge_wp_username"]' ).val()           || '',
+			live_password:     $( 'input[name="schemaforge_wp_password"]' ).val()           || '',
+			live_own_provider: $( 'select[name="schemaforge_wp_own_provider"]' ).val()      || 'anthropic',
+			live_own_key:      $( 'input[name="schemaforge_wp_own_key"]' ).val()            || '',
+		};
+	}
+
+	function setTriRow( id, state, detail ) {
+		var $tri  = $( '#sfwp-tri-' + id );
+		var icons = { ok: '✓', err: '✗', skip: '—', pending: '…' };
+		$tri.removeClass( 'is-ok is-err is-skip' )
+			.addClass( state === 'ok' ? 'is-ok' : ( state === 'err' ? 'is-err' : 'is-skip' ) );
+		$tri.find( '.sfwp-tri__icon' ).text( icons[ state ] || '—' );
+		$tri.find( '.sfwp-tri__detail' ).text( detail || '' );
+	}
+
+	$( '#sfwp-test-connection' ).on( 'click', function () {
+		var $btn     = $( this );
+		var $spinner = $( '#sfwp-test-spinner' );
+		var $results = $( '#sfwp-test-results' );
+
+		$btn.prop( 'disabled', true );
+		$spinner.show();
+		$results.show();
+		setTriRow( 'server', 'pending', '…' );
+		setTriRow( 'auth',   'skip',    '' );
+		setTriRow( 'llm',    'skip',    '' );
+
+		$.post( sfwp.ajax_url, $.extend( {
+			action: 'schemaforge_wp_test_connection',
+			nonce:  sfwp.nonce,
+		}, getLiveFormData() ) )
+		.done( function ( resp ) {
+			if ( ! resp.success ) {
+				setTriRow( 'server', 'err', resp.data || 'Fehler' );
+				return;
+			}
+			var d = resp.data;
+
+			if ( d.server && d.server.ok ) {
+				var s = 'Erreichbar';
+				if ( d.server.version )  s += ' · v' + d.server.version;
+				if ( d.server.provider ) s += ' · ' + d.server.provider;
+				setTriRow( 'server', 'ok', s );
+			} else {
+				setTriRow( 'server', 'err', ( d.server && d.server.message ) || 'Nicht erreichbar' );
+			}
+
+			if ( d.auth ) {
+				setTriRow( 'auth', d.auth.ok ? 'ok' : 'err', d.auth.message || '' );
+			} else {
+				setTriRow( 'auth', 'skip', 'Kein Server-Zugang konfiguriert' );
+			}
+
+			if ( d.llm ) {
+				setTriRow( 'llm', d.llm.ok ? 'ok' : 'err', d.llm.message || '' );
+			} else {
+				setTriRow( 'llm', 'skip', 'Kein eigener API-Key konfiguriert' );
+			}
+		} )
+		.fail( function () {
+			setTriRow( 'server', 'err', 'Verbindungsfehler' );
+		} )
+		.always( function () {
+			$btn.prop( 'disabled', false );
+			$spinner.hide();
+		} );
+	} );
+
+	// ── Settings: Strategie-Beschreibung ─────────────────────────────────
 
 	function updateStrategyDesc() {
 		var val = $( '#sfwp-strategy' ).val();

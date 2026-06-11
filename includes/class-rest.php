@@ -48,49 +48,61 @@ class SchemaForge_WP_Rest {
 			return;
 		}
 
-		// Step 1: Basic server reachability.
+		// Accept live form values — test without requiring a prior save.
+		$live_auth_type    = sanitize_text_field( wp_unslash( $_POST['live_auth_type']    ?? '' ) );
+		$live_username     = sanitize_text_field( wp_unslash( $_POST['live_username']     ?? '' ) );
+		$live_password     = sanitize_text_field( wp_unslash( $_POST['live_password']     ?? '' ) );
+		$live_own_provider = sanitize_text_field( wp_unslash( $_POST['live_own_provider'] ?? '' ) ) ?: 'anthropic';
+		$live_own_key      = sanitize_text_field( wp_unslash( $_POST['live_own_key']      ?? '' ) );
+
+		if ( ! in_array( $live_auth_type, [ 'none', 'server', 'own-key' ], true ) ) {
+			$live_auth_type = 'none';
+		}
+
+		$result = [ 'server' => null, 'auth' => null, 'llm' => null ];
+
+		// Step 1: Server reachability (always).
 		$health = $this->api->test_connection();
 		if ( is_wp_error( $health ) ) {
-			wp_send_json_error( $health->get_error_message() );
+			$result['server'] = [ 'ok' => false, 'message' => $health->get_error_message() ];
+			wp_send_json_success( $result );
 			return;
 		}
+		$result['server'] = [
+			'ok'       => true,
+			'version'  => $health['version']  ?? '',
+			'provider' => $health['provider'] ?? '',
+		];
 
-		$auth_type = get_option( 'schemaforge_wp_auth_type', 'none' );
-
-		// Step 2: Auth check depending on auth type.
-		if ( $auth_type === 'server' ) {
-			$cred = $this->api->test_credentials();
-			if ( is_wp_error( $cred ) ) {
-				wp_send_json_error(
-					sprintf(
-						/* translators: %s: error message */
-						__( 'Server erreichbar, aber Zugangsdaten ungültig: %s', 'schemaforge-wp' ),
-						$cred->get_error_message()
-					)
-				);
-				return;
+		// Step 2: Credentials check (server mode).
+		if ( $live_auth_type === 'server' ) {
+			$username = $live_username ?: get_option( 'schemaforge_wp_username', '' );
+			$password = $live_password ?: $this->api->get_stored_password();
+			if ( ! $username || ! $password ) {
+				$result['auth'] = [ 'ok' => false, 'message' => __( 'Benutzername oder Passwort fehlt.', 'schemaforge-wp' ) ];
+			} else {
+				$login = $this->api->test_credentials_with( $username, $password );
+				$result['auth'] = is_wp_error( $login )
+					? [ 'ok' => false, 'message' => $login->get_error_message() ]
+					: [ 'ok' => true,  'message' => __( 'Zugangsdaten gültig', 'schemaforge-wp' ) ];
 			}
-			wp_send_json_success( array_merge( $health, $cred, [ 'auth_type' => 'server' ] ) );
-			return;
 		}
 
-		if ( $auth_type === 'own-key' ) {
-			$key_check = $this->api->validate_key_format();
-			if ( is_wp_error( $key_check ) ) {
-				wp_send_json_error(
-					sprintf(
-						/* translators: %s: error message */
-						__( 'Server erreichbar, aber Key-Problem: %s', 'schemaforge-wp' ),
-						$key_check->get_error_message()
-					)
-				);
-				return;
+		// Step 3: LLM key check (own-key mode).
+		if ( $live_auth_type === 'own-key' ) {
+			$key      = $live_own_key ?: $this->api->get_stored_own_key();
+			$provider = in_array( $live_own_provider, [ 'anthropic', 'openai' ], true ) ? $live_own_provider : 'anthropic';
+			if ( ! $key ) {
+				$result['llm'] = [ 'ok' => false, 'message' => __( 'Kein API-Key hinterlegt.', 'schemaforge-wp' ) ];
+			} else {
+				$llm_test      = $this->api->test_own_key_live( $provider, $key );
+				$result['llm'] = is_wp_error( $llm_test )
+					? [ 'ok' => false, 'message' => $llm_test->get_error_message() ]
+					: [ 'ok' => true,  'message' => $llm_test['detail'] ?? __( 'Key gültig', 'schemaforge-wp' ) ];
 			}
-			wp_send_json_success( array_merge( $health, $key_check, [ 'auth_type' => 'own-key' ] ) );
-			return;
 		}
 
-		wp_send_json_success( array_merge( $health, [ 'auth_type' => 'none' ] ) );
+		wp_send_json_success( $result );
 	}
 
 	public function ajax_preview(): void {

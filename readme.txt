@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,14 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.2.2 =
+* UX: Two-column layout — main settings (2/3) with sticky sidebar (1/3) showing connection test, API-Server info, and detected plugins. Eliminates vertical scrolling.
+* UX: Settings flow reordered — Authentifizierung first, then Modus (which depends on it).
+* UX: Auto/LLM mode card is locked (greyed out, unselectable) when no authentication is configured. Automatically switches to Deterministisch if auth is removed.
+* UX: Connection test is now inline in the sidebar, always visible without scrolling.
+* Feature: Connection test uses live form values — no need to save first. Tests server, credentials, and LLM key as three separate result rows.
+* Feature: LLM key test makes a real API call (Anthropic: minimal messages call; OpenAI: models list) to verify the key actually works.
 
 = 1.2.1 =
 * Settings: Modus (Deterministisch / Auto+LLM) and Authentifizierung (Kein LLM / Server / Eigener Key) are now separate independent sections — you can use deterministic mode even when server credentials are saved.

@@ -219,6 +219,92 @@ class SchemaForge_WP_Api_Client {
 		return $token;
 	}
 
+	public function get_stored_password(): string {
+		return $this->enc->get_option( 'schemaforge_wp_password' );
+	}
+
+	public function get_stored_own_key(): string {
+		return $this->enc->get_option( 'schemaforge_wp_own_key' );
+	}
+
+	public function test_credentials_with( string $username, string $password ): array|\WP_Error {
+		$endpoint = $this->get_endpoint();
+		$response = wp_remote_post(
+			trailingslashit( $endpoint ) . 'api/login',
+			[
+				'headers' => [ 'Content-Type' => 'application/json' ],
+				'body'    => wp_json_encode( [ 'user' => $username, 'password' => $password ] ),
+				'timeout' => 10,
+			]
+		);
+		$parsed = $this->parse_response( $response );
+		if ( is_wp_error( $parsed ) ) {
+			return $parsed;
+		}
+		if ( empty( $parsed['token'] ) ) {
+			return new \WP_Error( 'login_failed', __( 'Login fehlgeschlagen.', 'schemaforge-wp' ) );
+		}
+		return [ 'auth' => 'ok' ];
+	}
+
+	/**
+	 * Live test of an own LLM key — makes a minimal real API call.
+	 * Anthropic: POST /v1/messages with max_tokens=1 (~$0.00001).
+	 * OpenAI: GET /v1/models (free auth check).
+	 */
+	public function test_own_key_live( string $provider, string $key ): array|\WP_Error {
+		if ( $provider === 'anthropic' ) {
+			$response = wp_remote_post(
+				'https://api.anthropic.com/v1/messages',
+				[
+					'headers' => [
+						'x-api-key'         => $key,
+						'anthropic-version' => '2023-06-01',
+						'content-type'      => 'application/json',
+					],
+					'body'    => wp_json_encode( [
+						'model'      => 'claude-haiku-4-5-20251001',
+						'max_tokens' => 1,
+						'messages'   => [ [ 'role' => 'user', 'content' => 'hi' ] ],
+					] ),
+					'timeout' => 12,
+				]
+			);
+			if ( is_wp_error( $response ) ) return $response;
+			$code = wp_remote_retrieve_response_code( $response );
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			if ( $code === 401 || $code === 403 ) {
+				return new \WP_Error( 'invalid_key', __( 'Key ungültig oder nicht autorisiert.', 'schemaforge-wp' ) );
+			}
+			if ( $code < 200 || $code >= 300 ) {
+				$msg = $body['error']['message'] ?? "HTTP $code";
+				return new \WP_Error( 'api_error', $msg );
+			}
+			return [ 'detail' => 'Key gültig · ' . ( $body['model'] ?? 'claude' ) ];
+		}
+
+		if ( $provider === 'openai' ) {
+			$response = wp_remote_get(
+				'https://api.openai.com/v1/models',
+				[
+					'headers' => [ 'Authorization' => 'Bearer ' . $key ],
+					'timeout' => 12,
+				]
+			);
+			if ( is_wp_error( $response ) ) return $response;
+			$code = wp_remote_retrieve_response_code( $response );
+			if ( $code === 401 ) {
+				return new \WP_Error( 'invalid_key', __( 'Key ungültig oder nicht autorisiert.', 'schemaforge-wp' ) );
+			}
+			if ( $code < 200 || $code >= 300 ) {
+				return new \WP_Error( 'api_error', "HTTP $code" );
+			}
+			return [ 'detail' => 'Key gültig · OpenAI' ];
+		}
+
+		return new \WP_Error( 'unknown_provider', __( 'Unbekannter Provider.', 'schemaforge-wp' ) );
+	}
+
 	private function parse_response( \WP_Error|array $response ): array|\WP_Error {
 		if ( is_wp_error( $response ) ) {
 			return $response;
