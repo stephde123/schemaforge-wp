@@ -71,13 +71,18 @@ class SchemaForge_WP_Generator {
 			return;
 		}
 
-		// Save the JSON-LD.
 		$json = $this->normalize_jsonld( $result['jsonld'] ?? null );
-		if ( $json ) {
-			update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_slash( $json ) );
+		if ( ! $json ) {
+			delete_post_meta( $post_id, '_schemaforge_wp_jsonld' );
+			$this->update_status( $post_id, 'error', [
+				'error_message' => __( 'API returned no valid JSON-LD.', 'schemaforge-wp' ),
+				'trigger'       => $trigger,
+			] );
+			return;
 		}
 
-		// Save meta (coverage, issues, recommendation, etc.).
+		update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_slash( $json ) );
+
 		$meta = [
 			'recommendation'  => $result['recommendation']  ?? '',
 			'usedMode'        => $result['usedMode']         ?? 'deterministic',
@@ -105,9 +110,16 @@ class SchemaForge_WP_Generator {
 		}
 
 		$json = $this->normalize_jsonld( $result['jsonld'] ?? null );
-		if ( $json ) {
-			update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_slash( $json ) );
+		if ( ! $json ) {
+			delete_post_meta( $post_id, '_schemaforge_wp_jsonld' );
+			$this->update_status( $post_id, 'error', [
+				'error_message' => __( 'API returned no valid JSON-LD.', 'schemaforge-wp' ),
+				'trigger'       => 'manual',
+			] );
+			return new \WP_Error( 'invalid_jsonld', __( 'API returned no valid JSON-LD.', 'schemaforge-wp' ) );
 		}
+
+		update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_slash( $json ) );
 
 		$meta = [
 			'recommendation'  => $result['recommendation']  ?? '',

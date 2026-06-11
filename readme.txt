@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,10 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.3.1 =
+* Security: Default API endpoint changed from HTTP/IP to HTTPS (`https://api.schemaforge.io`).
+* Fix: Invalid JSON-LD response from API now correctly sets post status to `error` and removes any stale JSON-LD, instead of silently marking the post as `done`.
 
 = 1.3.0 =
 * Feature: WpSignals — new `SchemaForge_WP_Data_Collector` class collects post core data (title, excerpt, author, featured image, dates), taxonomies (categories, tags, custom), site globals (name, description, URL, logo), public post meta, and WooCommerce product data (SKU, price, availability, dimensions, categories). Sent as `wpSignals` to the API where it becomes the highest-priority input for schema extraction — the LLM treats these values as authoritative CMS data over anything inferred from scraped HTML.
