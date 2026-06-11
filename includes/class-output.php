@@ -47,6 +47,17 @@ class SchemaForge_WP_Output {
 
 	// --- Yoast merge ---
 
+	/**
+	 * Article-family types that Yoast commonly emits as the primary content node.
+	 * Treated as equivalent for dedup: if Yoast has any of these, we skip
+	 * SchemaForge nodes of any type in this family to prevent a second Article.
+	 */
+	private const ARTICLE_FAMILY = [
+		'Article', 'BlogPosting', 'NewsArticle', 'TechArticle', 'Report',
+		'OpinionNewsArticle', 'AnalysisNewsArticle', 'ReviewNewsArticle',
+		'SatiricalArticle', 'ScholarlyArticle', 'SocialMediaPosting',
+	];
+
 	public function merge_into_yoast( array $graph, mixed $context ): array {
 		$nodes = $this->get_nodes();
 		if ( ! $nodes ) {
@@ -77,14 +88,42 @@ class SchemaForge_WP_Output {
 				}
 			}
 
-			// Skip if this @id is already in Yoast's graph (prevent duplicates).
+			// Skip if @id is already in Yoast's graph.
 			if ( isset( $node['@id'] ) && $this->find_id( $graph, null, $node['@id'] ) ) {
 				continue;
 			}
+
+			// Skip if Yoast's graph already has a node of the same (or equivalent) @type.
+			// This prevents a second Article/BlogPosting/WebPage/Organization etc.
+			if ( $this->graph_has_type_overlap( $graph, $node_types ) ) {
+				continue;
+			}
+
 			$graph[] = $node;
 		}
 
 		return $graph;
+	}
+
+	/**
+	 * Returns true when $graph already contains a node whose @type overlaps with $types.
+	 * Article-family members (Article, BlogPosting, NewsArticle, …) are treated as
+	 * equivalent so that a Yoast "Article" blocks a SchemaForge "BlogPosting" and vice versa.
+	 */
+	private function graph_has_type_overlap( array $graph, array $types ): bool {
+		$in_article_family = (bool) array_intersect( $types, self::ARTICLE_FAMILY );
+		$check = $in_article_family
+			? array_unique( array_merge( $types, self::ARTICLE_FAMILY ) )
+			: $types;
+
+		foreach ( $graph as $node ) {
+			$existing = $node['@type'] ?? '';
+			$existing = is_array( $existing ) ? $existing : [ $existing ];
+			if ( array_intersect( $check, $existing ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// --- Rank Math merge ---

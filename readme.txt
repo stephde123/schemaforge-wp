@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,9 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.3.2 =
+* Fix: Yoast merge no longer produces duplicate Article/BlogPosting nodes. SchemaForge now skips any node whose @type is already covered by Yoast's @graph, including the full Article family (BlogPosting, NewsArticle, TechArticle, etc.). Additive types like FAQPage and HowTo are still injected normally.
 
 = 1.3.1 =
 * Security: Default API endpoint changed from HTTP/IP to HTTPS (`https://api.schemaforge.io`).
