@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.3.2
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,12 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.4.0 =
+* Feature: Plugin adapters — The Events Calendar (`tribe_events`), LearnPress / TutorLMS / LifterLMS (course post types), WP Job Manager (`job_listing`), Easy Digital Downloads (`download`), Site Reviews, and WP-Review are now detected and their data sent as authoritative wpSignals to the API. Events get full venue + organizer + ticket data; courses carry price, duration, level, and instructor; job postings include employment type, salary, location, and apply URL; downloads include price and category; ratings produce an `AggregateRating` entity attached to the primary entity.
+* Feature: `collect_seo()` — SEO plugin meta (Yoast, Rank Math, AIOSEO, SEOPress) is now extracted and sent as `seo.description`, `seo.title`, and `seo.canonical`. The API prefers these values over anything inferred from scraped HTML.
+* Feature: `collect_blocks()` — Gutenberg block content is parsed with `parse_blocks()`. Yoast FAQ blocks, Rank Math FAQ blocks, and native `core/details` (WordPress 6.1+) produce authoritative `faqItems` Q&A pairs for FAQPage generation. Ordered `core/list` blocks carry their items as HowTo step hints.
+* Feature: Private post meta allowlist (`ALLOWED_PRIVATE_KEYS`) — underscore-prefixed meta keys that carry schema-relevant data (WooCommerce price, event dates, rating scores) are now explicitly included in the `meta` payload instead of being silently dropped.
 
 = 1.3.2 =
 * Fix: Yoast merge no longer produces duplicate Article/BlogPosting nodes. SchemaForge now skips any node whose @type is already covered by Yoast's @graph, including the full Article family (BlogPosting, NewsArticle, TechArticle, etc.). Additive types like FAQPage and HowTo are still injected normally.
