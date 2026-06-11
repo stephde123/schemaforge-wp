@@ -523,3 +523,27 @@
 	color: #646970;
 	cursor: pointer;
 }
+
+.sfwp-signals {
+	margin: 8px 0;
+	font-size: 11px;
+}
+
+.sfwp-signals summary {
+	cursor: pointer;
+	color: #8b93a3;
+	user-select: none;
+}
+
+.sfwp-signals-list {
+	margin: 4px 0 0 12px;
+	padding: 0;
+	list-style: none;
+}
+
+.sfwp-signals-list li {
+	color: #6b7280;
+	font-family: monospace;
+	font-size: 10px;
+	line-height: 1.6;
+}

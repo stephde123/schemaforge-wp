@@ -84,15 +84,16 @@ class SchemaForge_WP_Generator {
 		update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_slash( $json ) );
 
 		$meta = [
-			'recommendation'  => $result['recommendation']  ?? '',
-			'usedMode'        => $result['usedMode']         ?? 'deterministic',
-			'detectedPlugins' => $result['detection']['detectedPlugins'] ?? [],
-			'coverageScore'   => $result['coverageScore']   ?? 0,
-			'issues'          => $result['validation']['issues'] ?? [],
-			'missingRequired' => $result['validation']['missingRequired'] ?? [],
-			'generatedAt'     => current_time( 'mysql' ),
-			'trigger'         => $trigger,
-			'status'          => 'done',
+			'recommendation'   => $result['recommendation']  ?? '',
+			'usedMode'         => $result['usedMode']         ?? 'deterministic',
+			'detectedPlugins'  => $result['detection']['detectedPlugins'] ?? [],
+			'coverageScore'    => $result['coverageScore']   ?? 0,
+			'issues'           => $result['validation']['issues'] ?? [],
+			'missingRequired'  => $result['validation']['missingRequired'] ?? [],
+			'detectionSignals' => $result['detectionSignals'] ?? [],
+			'generatedAt'      => current_time( 'mysql' ),
+			'trigger'          => $trigger,
+			'status'           => 'done',
 		];
 		update_post_meta( $post_id, '_schemaforge_wp_meta', $meta );
 	}
@@ -122,15 +123,16 @@ class SchemaForge_WP_Generator {
 		update_post_meta( $post_id, '_schemaforge_wp_jsonld', wp_slash( $json ) );
 
 		$meta = [
-			'recommendation'  => $result['recommendation']  ?? '',
-			'usedMode'        => $result['usedMode']         ?? 'deterministic',
-			'detectedPlugins' => $result['detection']['detectedPlugins'] ?? [],
-			'coverageScore'   => $result['coverageScore']   ?? 0,
-			'issues'          => $result['validation']['issues'] ?? [],
-			'missingRequired' => $result['validation']['missingRequired'] ?? [],
-			'generatedAt'     => current_time( 'mysql' ),
-			'trigger'         => 'manual',
-			'status'          => 'done',
+			'recommendation'   => $result['recommendation']  ?? '',
+			'usedMode'         => $result['usedMode']         ?? 'deterministic',
+			'detectedPlugins'  => $result['detection']['detectedPlugins'] ?? [],
+			'coverageScore'    => $result['coverageScore']   ?? 0,
+			'issues'           => $result['validation']['issues'] ?? [],
+			'missingRequired'  => $result['validation']['missingRequired'] ?? [],
+			'detectionSignals' => $result['detectionSignals'] ?? [],
+			'generatedAt'      => current_time( 'mysql' ),
+			'trigger'          => 'manual',
+			'status'           => 'done',
 		];
 		update_post_meta( $post_id, '_schemaforge_wp_meta', $meta );
 

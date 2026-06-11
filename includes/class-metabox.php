@@ -53,14 +53,15 @@ class SchemaForge_WP_Metabox {
 	}
 
 	public function render( \WP_Post $post ): void {
-		$meta         = (array) get_post_meta( $post->ID, '_schemaforge_wp_meta', true );
-		$disabled     = (bool) get_post_meta( $post->ID, '_schemaforge_wp_disabled', true );
-		$status       = $meta['status']    ?? '';
-		$used_mode    = $meta['usedMode']  ?? '';
-		$score        = isset( $meta['coverageScore'] ) ? round( (float) $meta['coverageScore'] * 100 ) : null;
-		$generated    = $meta['generatedAt'] ?? '';
-		$trigger      = $meta['trigger']     ?? '';
-		$issues       = $meta['issues']      ?? [];
+		$meta             = (array) get_post_meta( $post->ID, '_schemaforge_wp_meta', true );
+		$disabled         = (bool) get_post_meta( $post->ID, '_schemaforge_wp_disabled', true );
+		$status           = $meta['status']    ?? '';
+		$used_mode        = $meta['usedMode']  ?? '';
+		$score            = isset( $meta['coverageScore'] ) ? round( (float) $meta['coverageScore'] * 100 ) : null;
+		$generated        = $meta['generatedAt'] ?? '';
+		$trigger          = $meta['trigger']     ?? '';
+		$issues           = $meta['issues']      ?? [];
+		$detection_signals = (array) ( $meta['detectionSignals'] ?? [] );
 		$plugin       = $this->detector->get_label();
 		$mode_setting = get_option( 'schemaforge_wp_mode', 'deterministic' );
 
@@ -130,6 +131,17 @@ class SchemaForge_WP_Metabox {
 			</button>
 			<span id="sfwp-generate-spinner" class="spinner" style="float:none;margin-top:8px;display:none"></span>
 			<p id="sfwp-generate-result" style="display:none"></p>
+
+			<?php if ( ! empty( $detection_signals ) ) : ?>
+				<details class="sfwp-signals">
+					<summary><?php esc_html_e( 'Erkennungs-Signale', 'schemaforge-wp' ); ?> (<?php echo count( $detection_signals ); ?>)</summary>
+					<ul class="sfwp-signals-list">
+						<?php foreach ( $detection_signals as $signal ) : ?>
+							<li><?php echo esc_html( $signal ); ?></li>
+						<?php endforeach; ?>
+					</ul>
+				</details>
+			<?php endif; ?>
 
 			<p>
 				<a href="#" id="sfwp-preview-toggle" class="sfwp-preview-toggle">

@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,12 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.5.0 =
+* Feature: Detection signals panel in the post metabox — shows the evidence signals (e.g. `wpsig:woocommerce`, `url:/product/`, `restaurant-signals`) that led to the page-type classification. Collapsed by default; opens on click.
+* Server (v0.3.0): Evidence-based classification replaces first-match URL rules. All signals now vote with weighted scores; the type with the highest total score wins as primary. wpSignals votes (60–80 pts) outweigh URL rules (45 pts) and text signals (15–45 pts), so plugin adapters always produce authoritative classifications. A Church page that also fires a `place-of-worship` text signal accumulates 90 pts instead of 45, producing higher `classificationConfidence`.
+* Server (v0.3.0): Microdata extraction — `[itemscope]` elements on the page are now fully parsed into typed entity objects (itemprop values for name, price, ratingValue, streetAddress, etc.) and fed into the entity pipeline, not just counted for presence.
+* Server (v0.3.0): Cheerio loop cleanup — internal use of `return false as any` replaced with `toArray()` + `for...of` + `break` throughout the extraction pipeline.
 
 = 1.4.0 =
 * Feature: Plugin adapters — The Events Calendar (`tribe_events`), LearnPress / TutorLMS / LifterLMS (course post types), WP Job Manager (`job_listing`), Easy Digital Downloads (`download`), Site Reviews, and WP-Review are now detected and their data sent as authoritative wpSignals to the API. Events get full venue + organizer + ticket data; courses carry price, duration, level, and instructor; job postings include employment type, salary, location, and apply URL; downloads include price and category; ratings produce an `AggregateRating` entity attached to the primary entity.
