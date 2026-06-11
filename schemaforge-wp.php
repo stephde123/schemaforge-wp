@@ -3,7 +3,7 @@
  * Plugin Name:       SchemaForge WP
  * Plugin URI:        https://github.com/stephde123/schemaforge-wp
  * Description:       Connects WordPress to the SchemaForge API for deep, specific schema.org JSON-LD markup on every post and page.
- * Version:           1.2.2
+ * Version:           1.3.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            SchemaForge
@@ -13,7 +13,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SCHEMAFORGE_WP_VERSION', '1.2.2' );
+define( 'SCHEMAFORGE_WP_VERSION', '1.3.0' );
 define( 'SCHEMAFORGE_WP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SCHEMAFORGE_WP_URL', plugin_dir_url( __FILE__ ) );
 define( 'SCHEMAFORGE_WP_CRON_HOOK', 'schemaforge_wp_generate_event' );
@@ -52,7 +52,8 @@ add_action( 'plugins_loaded', function (): void {
 
 	$encryption = new SchemaForge_WP_Encryption();
 	$detector   = new SchemaForge_WP_Detector();
-	$api_client = new SchemaForge_WP_Api_Client( $encryption, $detector );
+	$collector  = new SchemaForge_WP_Data_Collector();
+	$api_client = new SchemaForge_WP_Api_Client( $encryption, $detector, $collector );
 	$generator  = new SchemaForge_WP_Generator( $api_client, $detector );
 	$output     = new SchemaForge_WP_Output( $detector );
 

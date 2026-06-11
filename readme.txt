@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.2.2
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,11 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.3.0 =
+* Feature: WpSignals — new `SchemaForge_WP_Data_Collector` class collects post core data (title, excerpt, author, featured image, dates), taxonomies (categories, tags, custom), site globals (name, description, URL, logo), public post meta, and WooCommerce product data (SKU, price, availability, dimensions, categories). Sent as `wpSignals` to the API where it becomes the highest-priority input for schema extraction — the LLM treats these values as authoritative CMS data over anything inferred from scraped HTML.
+* Feature: FAQ extraction now runs unconditionally in deterministic mode — any page with ≥ 2 detectable Q&A pairs (microdata, class-based accordion, `<details>`, or question-shaped headings) gets a FAQPage entity regardless of page-type classification.
+* Feature: Classification confidence score (0–100 %) now returned in the API response as `classificationConfidence`, visible in the SchemaForge web UI next to the Coverage-Score.
 
 = 1.2.2 =
 * UX: Two-column layout — main settings (2/3) with sticky sidebar (1/3) showing connection test, API-Server info, and detected plugins. Eliminates vertical scrolling.

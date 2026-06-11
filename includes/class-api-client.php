@@ -3,15 +3,21 @@ defined( 'ABSPATH' ) || exit;
 
 class SchemaForge_WP_Api_Client {
 
-	private SchemaForge_WP_Encryption $enc;
-	private SchemaForge_WP_Detector   $detector;
+	private SchemaForge_WP_Encryption      $enc;
+	private SchemaForge_WP_Detector        $detector;
+	private SchemaForge_WP_Data_Collector  $collector;
 
 	/** Session token TTL in seconds (23h — server expires at 24h). */
 	private const TOKEN_TTL = 82800;
 
-	public function __construct( SchemaForge_WP_Encryption $enc, SchemaForge_WP_Detector $detector ) {
-		$this->enc      = $enc;
-		$this->detector = $detector;
+	public function __construct(
+		SchemaForge_WP_Encryption     $enc,
+		SchemaForge_WP_Detector       $detector,
+		SchemaForge_WP_Data_Collector $collector
+	) {
+		$this->enc       = $enc;
+		$this->detector  = $detector;
+		$this->collector = $collector;
 	}
 
 	/**
@@ -143,10 +149,13 @@ class SchemaForge_WP_Api_Client {
 			'lang'           => get_locale() !== '' ? substr( get_locale(), 0, 2 ) : null,
 		], fn( $v ) => $v !== null && $v !== '' );
 
+		$wp_signals = $this->collector->collect( $post_id );
+
 		$payload = [
-			'url'     => $url ?: null,
-			'mode'    => $mode,
-			'context' => $context ?: null,
+			'url'       => $url ?: null,
+			'mode'      => $mode,
+			'context'   => $context ?: null,
+			'wpSignals' => $wp_signals ?: null,
 		];
 
 		// Own LLM key: attach provider + key in the request body.
