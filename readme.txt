@@ -4,7 +4,7 @@ Tags: schema, schema.org, json-ld, structured data, seo
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,11 @@ PHP 8.1 or higher. The plugin uses libsodium (bundled with PHP 8.1+) for encrypt
 2. Post metabox — coverage score, validation issues, and JSON-LD preview.
 
 == Changelog ==
+
+= 1.6.0 =
+* Feature: SEO plugin merge support extended to All in One SEO (AIOSEO), SEOPress, and The SEO Framework. SchemaForge now inspects which @types each plugin emits and outputs only the complementary nodes — no duplicate Article, Product, or Event schemas regardless of which SEO plugin is active.
+* Feature: Business Directory Plugin (WPBDP) adapter — `wpbdp_listing` post type is detected and sent as authoritative signals. The server emits a `LocalBusiness` entity with phone, email, website, address, opening hours, and price range from WPBDP's custom fields. Business categories from `wpbdp_category` taxonomy are included automatically.
+* Improvement: `class-detector.php` now recognises AIOSEO, The SEO Framework, and SEOPress — the detected plugin is shown in the metabox header and sent as context to the API, improving server-side schema complement generation.
 
 = 1.5.0 =
 * Feature: Detection signals panel in the post metabox — shows the evidence signals (e.g. `wpsig:woocommerce`, `url:/product/`, `restaurant-signals`) that led to the page-type classification. Collapsed by default; opens on click.

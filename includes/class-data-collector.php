@@ -79,6 +79,9 @@ class SchemaForge_WP_Data_Collector {
 		$ratings = $this->collect_ratings( $post_id );
 		if ( $ratings ) $signals['ratings'] = $ratings;
 
+		$local_business = $this->collect_local_business( $post, $post_id );
+		if ( $local_business ) $signals['localBusiness'] = $local_business;
+
 		return array_filter( $signals, fn( $v ) => ! empty( $v ) );
 	}
 
@@ -589,5 +592,57 @@ class SchemaForge_WP_Data_Collector {
 		}
 
 		return [];
+	}
+
+	// -------------------------------------------------------------------------
+	// Business Directory Plugin (WPBDP)
+	// -------------------------------------------------------------------------
+
+	private function collect_local_business( \WP_Post $post, int $post_id ): array {
+		if ( $post->post_type !== 'wpbdp_listing' ) {
+			return [];
+		}
+
+		// Gate on WPBDP being active; post type alone is enough to emit the signal,
+		// but the plugin should be present to ensure the data is current.
+		if ( ! class_exists( 'WPBDP_App' ) && ! function_exists( 'wpbdp' ) ) {
+			return [];
+		}
+
+		$data = [];
+
+		// Business categories from WPBDP's own taxonomy.
+		$bd_cats = get_the_terms( $post_id, 'wpbdp_category' );
+		if ( $bd_cats && ! is_wp_error( $bd_cats ) ) {
+			$data['categories'] = wp_list_pluck( $bd_cats, 'name' );
+		}
+
+		// WPBDP stores field values via wpbdp_get_field_value() keyed by field
+		// association label. We probe the most common labels across installations.
+		if ( function_exists( 'wpbdp_get_field_value' ) ) {
+			$field_map = [
+				'phone'          => [ 'phone', 'telephone', 'tel', 'Phone Number' ],
+				'email'          => [ 'email', 'Email Address', 'contact_email' ],
+				'website'        => [ 'website', 'Website URL', 'url', 'web' ],
+				'address'        => [ 'address', 'Address', 'street_address' ],
+				'city'           => [ 'city', 'City', 'town' ],
+				'zip'            => [ 'zip', 'ZIP', 'postal_code', 'postcode' ],
+				'country'        => [ 'country', 'Country' ],
+				'openingHours'   => [ 'hours', 'opening_hours', 'business_hours', 'Hours' ],
+				'priceRange'     => [ 'price_range', 'priceRange', 'Price Range' ],
+			];
+
+			foreach ( $field_map as $key => $labels ) {
+				foreach ( $labels as $label ) {
+					$val = wpbdp_get_field_value( $post_id, $label );
+					if ( $val ) {
+						$data[ $key ] = is_array( $val ) ? implode( ', ', $val ) : (string) $val;
+						break;
+					}
+				}
+			}
+		}
+
+		return $data;
 	}
 }
